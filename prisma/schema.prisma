@@ -1,0 +1,305 @@
+// This is your Prisma schema file
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id        String   @id @default(cuid())
+    address   String   @unique // Wallet address
+    nonce     String? // For SIWE authentication
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Settings
+    settings UserSettings?
+
+    // Relations
+    followers     Follow[]       @relation("Follower")
+    following     Follow[]       @relation("Following")
+    trades        Trade[]
+    copiedTrades  CopiedTrade[]
+    notifications Notification[]
+    apiKeys       ApiKey[]
+
+    @@index([address])
+}
+
+model UserSettings {
+    id     String @id @default(cuid())
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Risk Management
+    maxCopyPercentage Float  @default(10) // Max % of balance per trade
+    minTradeAmount    Float  @default(1) // Min USDC
+    maxTradeAmount    Float? // Max USDC per trade
+    maxDailyLoss      Float? // Max daily loss in USDC
+    maxOpenPositions  Int    @default(50)
+
+    // Copy Settings
+    autoCopyEnabled   Boolean @default(true)
+    copyDelay         Int     @default(0) // Seconds delay
+    slippageTolerance Float   @default(0.5) // %
+
+    // Notifications
+    emailNotifications Boolean @default(true)
+    tradeNotifications Boolean @default(true)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Follow {
+    id          String @id @default(cuid())
+    followerId  String
+    followingId String
+
+    follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+    following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+    // Copy Settings for this specific trader
+    copySettings FollowCopySettings?
+
+    createdAt DateTime @default(now())
+
+    @@unique([followerId, followingId])
+    @@index([followerId])
+    @@index([followingId])
+}
+
+model FollowCopySettings {
+    id       String @id @default(cuid())
+    followId String @unique
+    follow   Follow @relation(fields: [followId], references: [id], onDelete: Cascade)
+
+    enabled        Boolean @default(true)
+    copyPercentage Float   @default(100) // % of your setting to use
+    minTradeSize   Float? // Override min
+    maxTradeSize   Float? // Override max
+
+    // Market filters
+    onlyMarkets    String[] // Only copy these markets (empty = all)
+    excludeMarkets String[] // Exclude these markets
+
+    // Outcome filters
+    onlyOutcomes String[] // Only YES/NO/BOTH
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Trade {
+    id     String @id @default(cuid())
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Polymarket Trade Data
+    marketId     String
+    marketTitle  String
+    outcomeIndex Int // 0 or 1 (Yes/No)
+    outcomeName  String // "Yes" or "No"
+    side         String // "BUY" or "SELL"
+
+    // Trade Details
+    amount Float // USDC amount
+    shares Float // Number of shares
+    price  Float // Execution price (0-1)
+    fee    Float @default(0)
+
+    // Transaction
+    transactionHash String?
+    blockNumber     Int?
+
+    // Status
+    status TradeStatus @default(PENDING)
+    error  String?
+
+    // Timestamps
+    createdAt  DateTime  @default(now())
+    executedAt DateTime?
+
+    // Relations
+    copiedTrades CopiedTrade[]
+
+    @@index([userId])
+    @@index([marketId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+model CopiedTrade {
+    id String @id @default(cuid())
+
+    // Original trade
+    originalTradeId String
+    originalTrade   Trade  @relation(fields: [originalTradeId], references: [id])
+
+    // Copier
+    copierId String
+    copier   User   @relation(fields: [copierId], references: [id], onDelete: Cascade)
+
+    // Polymarket Trade Data
+    marketId     String
+    marketTitle  String
+    outcomeIndex Int
+    outcomeName  String
+    side         String
+
+    // Trade Details
+    amount Float
+    shares Float
+    price  Float
+    fee    Float @default(0)
+
+    // Copy Details
+    copyPercentage Float // What % of settings was used
+    delayMs        Int   @default(0)
+
+    // Transaction
+    transactionHash String?
+    blockNumber     Int?
+
+    // Status
+    status TradeStatus @default(PENDING)
+    error  String?
+
+    // Timestamps
+    createdAt  DateTime  @default(now())
+    executedAt DateTime?
+
+    @@index([copierId])
+    @@index([originalTradeId])
+    @@index([marketId])
+    @@index([status])
+    @@index([createdAt])
+}
+
+model Market {
+    id          String  @id // Polymarket market ID
+    title       String
+    description String?
+
+    // Market Details
+    category  String?
+    endDate   DateTime?
+    volume    Float     @default(0)
+    liquidity Float     @default(0)
+
+    // Outcomes
+    outcomes       String[] // ["Yes", "No"]
+    outcomesPrices Float[] // Current prices
+
+    // Status
+    active         Boolean @default(true)
+    resolved       Boolean @default(false)
+    winningOutcome Int?
+
+    // Metadata
+    imageUrl String?
+    tags     String[]
+
+    // Timestamps
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([active])
+    @@index([endDate])
+    @@index([volume])
+}
+
+model Notification {
+    id     String @id @default(cuid())
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    type    NotificationType
+    title   String
+    message String
+    data    Json? // Additional data
+
+    read Boolean @default(false)
+
+    createdAt DateTime @default(now())
+
+    @@index([userId, read])
+    @@index([createdAt])
+}
+
+model ApiKey {
+    id     String @id @default(cuid())
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    name      String
+    key       String @unique
+    hashedKey String // Store hashed version
+
+    permissions String[] // ["read", "trade", "admin"]
+
+    active   Boolean   @default(true)
+    lastUsed DateTime?
+
+    expiresAt DateTime?
+    createdAt DateTime  @default(now())
+
+    @@index([userId])
+    @@index([key])
+}
+
+model SystemLog {
+    id String @id @default(cuid())
+
+    type    LogType
+    level   LogLevel
+    message String
+    data    Json?
+
+    userId  String?
+    tradeId String?
+
+    createdAt DateTime @default(now())
+
+    @@index([type])
+    @@index([level])
+    @@index([createdAt])
+}
+
+enum TradeStatus {
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+    CANCELLED
+}
+
+enum NotificationType {
+    TRADE_EXECUTED
+    TRADE_FAILED
+    NEW_FOLLOWER
+    TRADER_TRADE
+    SYSTEM_ALERT
+    RISK_WARNING
+}
+
+enum LogType {
+    TRADE
+    COPY
+    AUTH
+    API
+    SYSTEM
+    ERROR
+}
+
+enum LogLevel {
+    DEBUG
+    INFO
+    WARN
+    ERROR
+    CRITICAL
+}

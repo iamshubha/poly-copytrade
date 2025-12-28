@@ -1,0 +1,14 @@
+[install]
+# Install options
+optional = true
+dev = true
+peer = true
+production = false
+
+[install.cache]
+# Cache directory
+dir = "~/.bun/install/cache"
+
+[test]
+# Test options
+preload = ["./jest.setup.js"]
