@@ -80,9 +80,26 @@ export default function FollowingPage() {
                 </p>
             </div>
 
+            {/* Discover Traders CTA */}
+            <Link href="/dashboard/traders" className="card hover:shadow-lg transition-shadow bg-gradient-to-r from-primary-50 to-blue-50 border-2 border-primary-200">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            🔍 Discover Top Traders
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                            Browse successful traders, view their stats, and follow them with one click
+                        </p>
+                    </div>
+                    <div className="btn-primary ml-4">
+                        Explore →
+                    </div>
+                </div>
+            </Link>
+
             {/* Add New Trader */}
             <div className="card">
-                <h2 className="text-xl font-semibold mb-4">Follow a Trader</h2>
+                <h2 className="text-xl font-semibold mb-4">Follow a Trader Manually</h2>
                 <div className="flex gap-4">
                     <input
                         type="text"

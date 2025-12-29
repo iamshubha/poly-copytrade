@@ -10,7 +10,7 @@ class PolymarketClient {
       baseURL: process.env.POLYMARKET_API_URL || "https://clob.polymarket.com",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
       },
       timeout: 10000,
     });
@@ -31,7 +31,7 @@ class PolymarketClient {
       // Build query params
       const queryParams = new URLSearchParams();
       queryParams.append("limit", String(params?.limit || 20));
-      
+
       if (params?.active !== undefined) {
         queryParams.append("active", String(params.active));
       }
@@ -42,15 +42,16 @@ class PolymarketClient {
         queryParams.append("offset", String(params.offset));
       }
 
-      const baseURL = process.env.POLYMARKET_API_URL || "https://clob.polymarket.com";
+      const baseURL =
+        process.env.POLYMARKET_API_URL || "https://clob.polymarket.com";
       const url = `${baseURL}/markets?${queryParams.toString()}`;
-      
+
       console.log("[Polymarket Client] Fetching from:", url);
       // Use fetch instead of axios to avoid Bun compatibility issues
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         signal: AbortSignal.timeout(10000),
       });
@@ -60,41 +61,47 @@ class PolymarketClient {
       }
 
       const data = await response.json();
-      
+
       // CLOB API returns nested in 'data' property, Gamma API returns array directly
-      const markets = Array.isArray(data) ? data : data?.data || data?.markets || [];
-      
+      const markets = Array.isArray(data)
+        ? data
+        : data?.data || data?.markets || [];
+
       // Map API response to our format
       return markets.map((market: any) => {
         // Parse JSON strings if they exist
         let outcomes = market.outcomes || ["Yes", "No"];
         let outcomePrices = market.outcomePrices || market.outcome_prices || [];
-        
+
         // Handle JSON strings
-        if (typeof outcomes === 'string') {
+        if (typeof outcomes === "string") {
           try {
             outcomes = JSON.parse(outcomes);
           } catch (e) {
             outcomes = ["Yes", "No"];
           }
         }
-        
-        if (typeof outcomePrices === 'string') {
+
+        if (typeof outcomePrices === "string") {
           try {
             outcomePrices = JSON.parse(outcomePrices);
           } catch (e) {
             outcomePrices = [];
           }
         }
-        
+
         // Extract prices from tokens array if outcomePrices is empty
-        if ((!outcomePrices || outcomePrices.length === 0) && market.tokens && Array.isArray(market.tokens)) {
+        if (
+          (!outcomePrices || outcomePrices.length === 0) &&
+          market.tokens &&
+          Array.isArray(market.tokens)
+        ) {
           outcomePrices = market.tokens.map((token: any) => {
             const price = parseFloat(token.price || "0.5");
             return price;
           });
         }
-        
+
         const mapped = {
           id: market.condition_id || market.id,
           condition_id: market.condition_id || market.id,
@@ -107,7 +114,8 @@ class PolymarketClient {
           active: market.active !== false,
           closed: market.closed || false,
           market_slug: market.market_slug || market.slug || "",
-          end_date_iso: market.end_date_iso || market.endDate || new Date().toISOString(),
+          end_date_iso:
+            market.end_date_iso || market.endDate || new Date().toISOString(),
           tags: market.tags || [],
           image: market.image || market.icon,
         };
@@ -126,13 +134,14 @@ class PolymarketClient {
   // Get specific market by ID
   async getMarket(marketId: string): Promise<PolymarketMarket> {
     try {
-      const baseURL = process.env.POLYMARKET_API_URL || "https://clob.polymarket.com";
+      const baseURL =
+        process.env.POLYMARKET_API_URL || "https://clob.polymarket.com";
       const url = `${baseURL}/markets/${marketId}`;
-      
+
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         signal: AbortSignal.timeout(10000),
       });
@@ -143,32 +152,38 @@ class PolymarketClient {
 
       const data = await response.json();
       const market = data?.data || data;
-      
+
       // Parse outcomes and prices
       let outcomes = market.outcomes || ["Yes", "No"];
       let outcomePrices = market.outcomePrices || market.outcome_prices || [];
-      
-      if (typeof outcomes === 'string') {
+
+      if (typeof outcomes === "string") {
         try {
           outcomes = JSON.parse(outcomes);
         } catch (e) {
           outcomes = ["Yes", "No"];
         }
       }
-      
-      if (typeof outcomePrices === 'string') {
+
+      if (typeof outcomePrices === "string") {
         try {
           outcomePrices = JSON.parse(outcomePrices);
         } catch (e) {
           outcomePrices = [];
         }
       }
-      
+
       // Extract prices from tokens if needed
-      if ((!outcomePrices || outcomePrices.length === 0) && market.tokens && Array.isArray(market.tokens)) {
-        outcomePrices = market.tokens.map((token: any) => parseFloat(token.price || "0.5"));
+      if (
+        (!outcomePrices || outcomePrices.length === 0) &&
+        market.tokens &&
+        Array.isArray(market.tokens)
+      ) {
+        outcomePrices = market.tokens.map((token: any) =>
+          parseFloat(token.price || "0.5")
+        );
       }
-      
+
       return {
         id: market.id || market.condition_id || market.conditionId,
         condition_id: market.conditionId || market.condition_id,
@@ -181,7 +196,8 @@ class PolymarketClient {
         active: market.active !== false,
         closed: market.closed || false,
         market_slug: market.market_slug || market.slug || "",
-        end_date_iso: market.end_date_iso || market.endDate || new Date().toISOString(),
+        end_date_iso:
+          market.end_date_iso || market.endDate || new Date().toISOString(),
         tags: market.tags || [],
         image: market.image || market.icon,
       };

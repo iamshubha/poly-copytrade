@@ -143,11 +143,11 @@ export default function TradesPage() {
                             <p className="text-2xl font-bold text-gray-900 mt-1">
                                 {trades?.data?.trades
                                     ? (
-                                          (trades.data.trades.filter((t: any) => t.status === 'COMPLETED')
-                                              .length /
-                                              trades.data.trades.length) *
-                                          100
-                                      ).toFixed(0)
+                                        (trades.data.trades.filter((t: any) => t.status === 'COMPLETED')
+                                            .length /
+                                            trades.data.trades.length) *
+                                        100
+                                    ).toFixed(0)
                                     : 0}
                                 %
                             </p>
@@ -213,11 +213,10 @@ export default function TradesPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    trade.side === 'BUY'
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${trade.side === 'BUY'
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-red-100 text-red-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 {trade.side === 'BUY' ? (
                                                     <TrendingUp className="h-3 w-3 mr-1" />
@@ -319,11 +318,10 @@ export default function TradesPage() {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    trade.side === 'BUY'
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${trade.side === 'BUY'
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-red-100 text-red-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 {trade.side === 'BUY' ? (
                                                     <TrendingUp className="h-3 w-3 mr-1" />

@@ -110,7 +110,8 @@ model Trade {
     amount Float // USDC amount
     shares Float // Number of shares
     price  Float // Execution price (0-1)
-    fee    Float @default(0)
+    fee    Float  @default(0)
+    profit Float? // Profit/Loss from trade
 
     // Transaction
     transactionHash String?

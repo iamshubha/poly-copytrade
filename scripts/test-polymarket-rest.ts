@@ -16,7 +16,11 @@ async function testRestClient() {
       active: true,
     });
 
-    console.log(`\n✅ Got ${Array.isArray(markets) ? markets.length : 'non-array'} markets`);
+    console.log(
+      `\n✅ Got ${
+        Array.isArray(markets) ? markets.length : "non-array"
+      } markets`
+    );
     console.log(`Type: ${typeof markets}`);
     console.log(`Is Array: ${Array.isArray(markets)}`);
 
@@ -34,13 +38,18 @@ async function testRestClient() {
 
       // Test getBatchMarketStats
       console.log("\n2️⃣ Fetching batch stats for first 3 markets...");
-      const marketIds = markets.slice(0, 3).map(m => m.condition_id).filter(Boolean);
+      const marketIds = markets
+        .slice(0, 3)
+        .map((m) => m.condition_id)
+        .filter(Boolean);
       console.log(`Market IDs: ${marketIds.join(", ")}`);
 
       if (marketIds.length > 0) {
         const stats = await polymarketClient.getBatchMarketStats(marketIds);
-        console.log(`\n✅ Got ${Array.isArray(stats) ? stats.length : 'non-array'} stats`);
-        
+        console.log(
+          `\n✅ Got ${Array.isArray(stats) ? stats.length : "non-array"} stats`
+        );
+
         if (Array.isArray(stats) && stats.length > 0) {
           console.log("\n📈 First stat sample:");
           const firstStat = stats[0];
@@ -60,17 +69,18 @@ async function testRestClient() {
       console.log("⚠️  Markets is empty or not an array");
       console.log("Markets value:", markets);
     }
-
   } catch (error: any) {
     console.error("\n❌ Error:", error.message);
     console.error("Stack:", error.stack);
   }
 }
 
-testRestClient().then(() => {
-  console.log("\n✅ Test complete");
-  process.exit(0);
-}).catch((error) => {
-  console.error("\n❌ Fatal error:", error);
-  process.exit(1);
-});
+testRestClient()
+  .then(() => {
+    console.log("\n✅ Test complete");
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error("\n❌ Fatal error:", error);
+    process.exit(1);
+  });

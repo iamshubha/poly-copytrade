@@ -30,7 +30,7 @@ export default function SignInPage() {
             setWalletType(type);
 
             const provider = getProvider(type);
-            
+
             if (!provider) {
                 if (type === 'phantom') {
                     toast.error('Please install Phantom wallet');
@@ -132,7 +132,7 @@ export default function SignInPage() {
             router.push('/dashboard');
         } catch (error: any) {
             console.error('[Auth] Sign in error:', error);
-            
+
             // More detailed error messages
             let errorMessage = 'Failed to sign in';
             if (error.code === 4001) {
@@ -152,7 +152,7 @@ export default function SignInPage() {
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            
+
             toast.error(errorMessage, { duration: 5000 });
         } finally {
             setLoading(false);
@@ -215,7 +215,7 @@ export default function SignInPage() {
                             ) : (
                                 <>
                                     <svg className="w-6 h-6" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M96.7 81.3c7.4-11.9 4.2-21.9-3.5-31.2-2.7-3.3-8.3-9.7-8.3-9.7s-1.8 13-10.3 20.6c-8.5 7.6-15.2 7.4-24.9 7.6-9.7.2-21.5 3.1-28.7 13.4-7.2 10.3-9.7 22.5-2.3 34.4 7.4 11.9 20.6 18.2 34 18.2 13.4 0 36.6-41.4 44-53.3Z" fill="#AB9FF2"/>
+                                        <path d="M96.7 81.3c7.4-11.9 4.2-21.9-3.5-31.2-2.7-3.3-8.3-9.7-8.3-9.7s-1.8 13-10.3 20.6c-8.5 7.6-15.2 7.4-24.9 7.6-9.7.2-21.5 3.1-28.7 13.4-7.2 10.3-9.7 22.5-2.3 34.4 7.4 11.9 20.6 18.2 34 18.2 13.4 0 36.6-41.4 44-53.3Z" fill="#AB9FF2" />
                                     </svg>
                                     Connect Phantom Wallet
                                 </>
@@ -254,12 +254,12 @@ export default function SignInPage() {
                             ) : (
                                 <>
                                     <svg className="w-6 h-6" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M36.5 5L23 16l2.5-6z" fill="#E17726"/>
-                                        <path d="M3.5 5L17 16l-2.5-6z" fill="#E27625"/>
-                                        <path d="M31 28l-3.5 5.5 7.5 2 2-7z" fill="#E27625"/>
-                                        <path d="M3 28.5l2 7 7.5-2L9 28z" fill="#E27625"/>
-                                        <path d="M15.5 18L13 22l7.5.5V18z" fill="#E27625"/>
-                                        <path d="M24.5 18l-4 4.5 7.5-.5-3.5-4z" fill="#E27625"/>
+                                        <path d="M36.5 5L23 16l2.5-6z" fill="#E17726" />
+                                        <path d="M3.5 5L17 16l-2.5-6z" fill="#E27625" />
+                                        <path d="M31 28l-3.5 5.5 7.5 2 2-7z" fill="#E27625" />
+                                        <path d="M3 28.5l2 7 7.5-2L9 28z" fill="#E27625" />
+                                        <path d="M15.5 18L13 22l7.5.5V18z" fill="#E27625" />
+                                        <path d="M24.5 18l-4 4.5 7.5-.5-3.5-4z" fill="#E27625" />
                                     </svg>
                                     Connect MetaMask
                                 </>
@@ -288,7 +288,7 @@ export default function SignInPage() {
                             </a>
                         </div>
                     </div>
-                    
+
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
                         <strong>Note for Phantom users:</strong> Enable Ethereum in Phantom by going to Settings → Manage Networks → Turn on Ethereum
                     </div>

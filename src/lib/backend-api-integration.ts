@@ -1,17 +1,17 @@
 /**
  * Backend API Integration Module
  * Unified interface for trade subscriptions, market stats, and leader detection
- * 
+ *
  * Features:
  * 🔹 Subscribe to trade data (WebSocket or REST polling)
  * 🔹 Fetch market stats
  * 🔹 Detect leader wallet trades
  */
 
-import { EventEmitter } from 'events';
-import { PolymarketRestClient } from './polymarket/rest-client';
-import { PolymarketWSClient } from './polymarket/ws-client';
-import { LeaderWalletDetector } from './polymarket/leader-detector';
+import { EventEmitter } from "events";
+import { PolymarketRestClient } from "./polymarket/rest-client";
+import { PolymarketWSClient } from "./polymarket/ws-client";
+import { LeaderWalletDetector } from "./polymarket/leader-detector";
 import {
   Trade,
   Market,
@@ -21,7 +21,7 @@ import {
   TradeFilter,
   MarketFilter,
   PolymarketConfig,
-} from './polymarket/types';
+} from "./polymarket/types";
 
 // ============================================
 // TYPES & INTERFACES
@@ -32,12 +32,12 @@ export interface BackendAPIConfig extends Partial<PolymarketConfig> {
    * Use WebSocket for real-time updates (true) or REST polling (false)
    */
   useWebSocket?: boolean;
-  
+
   /**
    * Polling interval in milliseconds (used when useWebSocket = false)
    */
   pollingInterval?: number;
-  
+
   /**
    * Leader wallet detection configuration
    */
@@ -48,7 +48,7 @@ export interface BackendAPIConfig extends Partial<PolymarketConfig> {
     minWinRate?: number;
     updateInterval?: number;
   };
-  
+
   /**
    * Auto-reconnect on connection loss
    */
@@ -60,7 +60,7 @@ export interface TradeSubscription {
   marketId?: string;
   walletAddress?: string;
   active: boolean;
-  type: 'websocket' | 'polling';
+  type: "websocket" | "polling";
 }
 
 export interface MarketStatsCache {
@@ -73,24 +73,24 @@ export interface MarketStatsCache {
 // Event types
 export interface BackendAPIEvents {
   // Trade events
-  'trade': (trade: Trade) => void;
-  'trade:market': (marketId: string, trade: Trade) => void;
-  'trade:wallet': (walletAddress: string, trade: Trade) => void;
-  'trade:leader': (leader: LeaderWallet, trade: Trade) => void;
-  
+  trade: (trade: Trade) => void;
+  "trade:market": (marketId: string, trade: Trade) => void;
+  "trade:wallet": (walletAddress: string, trade: Trade) => void;
+  "trade:leader": (leader: LeaderWallet, trade: Trade) => void;
+
   // Market events
-  'market:update': (marketId: string, market: Market) => void;
-  'market:stats': (marketId: string, stats: MarketStats) => void;
-  
+  "market:update": (marketId: string, market: Market) => void;
+  "market:stats": (marketId: string, stats: MarketStats) => void;
+
   // Leader events
-  'leader:detected': (wallet: LeaderWallet) => void;
-  'leader:trade': (wallet: LeaderWallet, trade: Trade) => void;
-  
+  "leader:detected": (wallet: LeaderWallet) => void;
+  "leader:trade": (wallet: LeaderWallet, trade: Trade) => void;
+
   // Connection events
-  'connected': () => void;
-  'disconnected': () => void;
-  'error': (error: Error) => void;
-  'reconnecting': (attempt: number) => void;
+  connected: () => void;
+  disconnected: () => void;
+  error: (error: Error) => void;
+  reconnecting: (attempt: number) => void;
 }
 
 // ============================================
@@ -102,22 +102,22 @@ export class BackendAPIIntegration extends EventEmitter {
   private wsClient: PolymarketWSClient | null = null;
   private leaderDetector: LeaderWalletDetector | null = null;
   private config: BackendAPIConfig;
-  
+
   // Subscription management
   private subscriptions: Map<string, TradeSubscription> = new Map();
   private pollingIntervals: Map<string, NodeJS.Timeout> = new Map();
-  
+
   // Caching
   private marketStatsCache: Map<string, MarketStatsCache> = new Map();
   private marketsCache: Map<string, Market> = new Map();
-  
+
   // State
   private isInitialized = false;
   private isConnected = false;
 
   constructor(config: BackendAPIConfig = {}) {
     super();
-    
+
     this.config = {
       useWebSocket: config.useWebSocket ?? true,
       pollingInterval: config.pollingInterval || 5000,
@@ -145,12 +145,12 @@ export class BackendAPIIntegration extends EventEmitter {
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      console.log('[Backend API] Already initialized');
+      console.log("[Backend API] Already initialized");
       return;
     }
 
     try {
-      console.log('[Backend API] Initializing...');
+      console.log("[Backend API] Initializing...");
 
       // Initialize WebSocket client if enabled
       if (this.config.useWebSocket) {
@@ -161,19 +161,21 @@ export class BackendAPIIntegration extends EventEmitter {
 
       // Initialize leader detector if enabled
       if (this.config.leaderDetection?.enabled) {
-        this.leaderDetector = new LeaderWalletDetector(this.config.leaderDetection);
+        this.leaderDetector = new LeaderWalletDetector(
+          this.config.leaderDetection
+        );
         this.setupLeaderDetectorHandlers();
         await this.leaderDetector.start();
       }
 
       this.isInitialized = true;
       this.isConnected = true;
-      this.emit('connected');
-      
-      console.log('[Backend API] Initialized successfully');
+      this.emit("connected");
+
+      console.log("[Backend API] Initialized successfully");
     } catch (error) {
-      console.error('[Backend API] Initialization error:', error);
-      this.emit('error', error as Error);
+      console.error("[Backend API] Initialization error:", error);
+      this.emit("error", error as Error);
       throw error;
     }
   }
@@ -182,7 +184,7 @@ export class BackendAPIIntegration extends EventEmitter {
    * Disconnect and cleanup
    */
   async disconnect(): Promise<void> {
-    console.log('[Backend API] Disconnecting...');
+    console.log("[Backend API] Disconnecting...");
 
     // Stop all polling
     this.pollingIntervals.forEach((interval) => clearInterval(interval));
@@ -203,9 +205,9 @@ export class BackendAPIIntegration extends EventEmitter {
     this.subscriptions.clear();
     this.isConnected = false;
     this.isInitialized = false;
-    
-    this.emit('disconnected');
-    console.log('[Backend API] Disconnected');
+
+    this.emit("disconnected");
+    console.log("[Backend API] Disconnected");
   }
 
   // ============================================
@@ -232,8 +234,8 @@ export class BackendAPIIntegration extends EventEmitter {
     if (useWS && this.wsClient) {
       // WebSocket subscription
       await this.wsClient.subscribeTrades(marketId, (trade) => {
-        this.emit('trade', trade);
-        this.emit('trade:market', marketId, trade);
+        this.emit("trade", trade);
+        this.emit("trade:market", marketId, trade);
         this.handleIncomingTrade(trade);
       });
 
@@ -241,10 +243,12 @@ export class BackendAPIIntegration extends EventEmitter {
         id: subscriptionId,
         marketId,
         active: true,
-        type: 'websocket',
+        type: "websocket",
       });
 
-      console.log(`[Backend API] Subscribed to market ${marketId} via WebSocket`);
+      console.log(
+        `[Backend API] Subscribed to market ${marketId} via WebSocket`
+      );
     } else {
       // REST polling subscription
       const interval = setInterval(async () => {
@@ -254,13 +258,16 @@ export class BackendAPIIntegration extends EventEmitter {
           });
 
           trades.data.forEach((trade) => {
-            this.emit('trade', trade);
-            this.emit('trade:market', marketId, trade);
+            this.emit("trade", trade);
+            this.emit("trade:market", marketId, trade);
             this.handleIncomingTrade(trade);
           });
         } catch (error) {
-          console.error(`[Backend API] Polling error for market ${marketId}:`, error);
-          this.emit('error', error as Error);
+          console.error(
+            `[Backend API] Polling error for market ${marketId}:`,
+            error
+          );
+          this.emit("error", error as Error);
         }
       }, this.config.pollingInterval);
 
@@ -269,7 +276,7 @@ export class BackendAPIIntegration extends EventEmitter {
         id: subscriptionId,
         marketId,
         active: true,
-        type: 'polling',
+        type: "polling",
       });
 
       console.log(`[Backend API] Subscribed to market ${marketId} via polling`);
@@ -291,15 +298,17 @@ export class BackendAPIIntegration extends EventEmitter {
     const subscriptionId = `wallet-${walletAddress}`;
 
     if (this.subscriptions.has(subscriptionId)) {
-      console.log(`[Backend API] Already subscribed to wallet ${walletAddress}`);
+      console.log(
+        `[Backend API] Already subscribed to wallet ${walletAddress}`
+      );
       return subscriptionId;
     }
 
     if (useWS && this.wsClient) {
       // WebSocket subscription
       await this.wsClient.subscribeWallet(walletAddress, (trade) => {
-        this.emit('trade', trade);
-        this.emit('trade:wallet', walletAddress, trade);
+        this.emit("trade", trade);
+        this.emit("trade:wallet", walletAddress, trade);
         this.handleIncomingTrade(trade);
       });
 
@@ -307,10 +316,12 @@ export class BackendAPIIntegration extends EventEmitter {
         id: subscriptionId,
         walletAddress,
         active: true,
-        type: 'websocket',
+        type: "websocket",
       });
 
-      console.log(`[Backend API] Subscribed to wallet ${walletAddress} via WebSocket`);
+      console.log(
+        `[Backend API] Subscribed to wallet ${walletAddress} via WebSocket`
+      );
     } else {
       // REST polling subscription
       const interval = setInterval(async () => {
@@ -320,13 +331,16 @@ export class BackendAPIIntegration extends EventEmitter {
           });
 
           trades.data.forEach((trade) => {
-            this.emit('trade', trade);
-            this.emit('trade:wallet', walletAddress, trade);
+            this.emit("trade", trade);
+            this.emit("trade:wallet", walletAddress, trade);
             this.handleIncomingTrade(trade);
           });
         } catch (error) {
-          console.error(`[Backend API] Polling error for wallet ${walletAddress}:`, error);
-          this.emit('error', error as Error);
+          console.error(
+            `[Backend API] Polling error for wallet ${walletAddress}:`,
+            error
+          );
+          this.emit("error", error as Error);
         }
       }, this.config.pollingInterval);
 
@@ -335,10 +349,12 @@ export class BackendAPIIntegration extends EventEmitter {
         id: subscriptionId,
         walletAddress,
         active: true,
-        type: 'polling',
+        type: "polling",
       });
 
-      console.log(`[Backend API] Subscribed to wallet ${walletAddress} via polling`);
+      console.log(
+        `[Backend API] Subscribed to wallet ${walletAddress} via polling`
+      );
     }
 
     return subscriptionId;
@@ -347,32 +363,34 @@ export class BackendAPIIntegration extends EventEmitter {
   /**
    * Subscribe to all trades across all markets
    */
-  async subscribeToAllTrades(options: { useWebSocket?: boolean } = {}): Promise<string> {
+  async subscribeToAllTrades(
+    options: { useWebSocket?: boolean } = {}
+  ): Promise<string> {
     const useWS = options.useWebSocket ?? this.config.useWebSocket;
-    const subscriptionId = 'all-trades';
+    const subscriptionId = "all-trades";
 
     if (this.subscriptions.has(subscriptionId)) {
-      console.log('[Backend API] Already subscribed to all trades');
+      console.log("[Backend API] Already subscribed to all trades");
       return subscriptionId;
     }
 
     if (useWS && this.wsClient) {
       // WebSocket subscription to all trades
       await this.wsClient.subscribeAllTrades((trade) => {
-        this.emit('trade', trade);
+        this.emit("trade", trade);
         this.handleIncomingTrade(trade);
       });
 
       this.subscriptions.set(subscriptionId, {
         id: subscriptionId,
         active: true,
-        type: 'websocket',
+        type: "websocket",
       });
 
-      console.log('[Backend API] Subscribed to all trades via WebSocket');
+      console.log("[Backend API] Subscribed to all trades via WebSocket");
     } else {
-      console.warn('[Backend API] All trades subscription requires WebSocket');
-      throw new Error('All trades subscription requires WebSocket mode');
+      console.warn("[Backend API] All trades subscription requires WebSocket");
+      throw new Error("All trades subscription requires WebSocket mode");
     }
 
     return subscriptionId;
@@ -388,13 +406,13 @@ export class BackendAPIIntegration extends EventEmitter {
       return;
     }
 
-    if (subscription.type === 'websocket' && this.wsClient) {
+    if (subscription.type === "websocket" && this.wsClient) {
       if (subscription.marketId) {
         await this.wsClient.unsubscribeTrades(subscription.marketId);
       } else if (subscription.walletAddress) {
         await this.wsClient.unsubscribeWallet(subscription.walletAddress);
       }
-    } else if (subscription.type === 'polling') {
+    } else if (subscription.type === "polling") {
       const interval = this.pollingIntervals.get(subscriptionId);
       if (interval) {
         clearInterval(interval);
@@ -415,7 +433,10 @@ export class BackendAPIIntegration extends EventEmitter {
    * @param marketId Market condition ID
    * @param useCache Use cached data if available
    */
-  async fetchMarketStats(marketId: string, useCache = true): Promise<MarketStats> {
+  async fetchMarketStats(
+    marketId: string,
+    useCache = true
+  ): Promise<MarketStats> {
     // Check cache
     if (useCache) {
       const cached = this.marketStatsCache.get(marketId);
@@ -427,7 +448,7 @@ export class BackendAPIIntegration extends EventEmitter {
 
     try {
       const stats = await this.restClient.getMarketStats(marketId);
-      
+
       // Cache the result
       this.marketStatsCache.set(marketId, {
         marketId,
@@ -436,7 +457,7 @@ export class BackendAPIIntegration extends EventEmitter {
         ttl: 60000, // 1 minute TTL
       });
 
-      this.emit('market:stats', marketId, stats);
+      this.emit("market:stats", marketId, stats);
       return stats;
     } catch (error) {
       console.error(`[Backend API] Error fetching market stats:`, error);
@@ -459,7 +480,10 @@ export class BackendAPIIntegration extends EventEmitter {
           const stats = await this.fetchMarketStats(marketId, useCache);
           results.set(marketId, stats);
         } catch (error) {
-          console.error(`[Backend API] Error fetching stats for ${marketId}:`, error);
+          console.error(
+            `[Backend API] Error fetching stats for ${marketId}:`,
+            error
+          );
         }
       })
     );
@@ -482,7 +506,7 @@ export class BackendAPIIntegration extends EventEmitter {
     try {
       const market = await this.restClient.getMarket(marketId);
       this.marketsCache.set(marketId, market);
-      this.emit('market:update', marketId, market);
+      this.emit("market:update", marketId, market);
       return market;
     } catch (error) {
       console.error(`[Backend API] Error fetching market:`, error);
@@ -496,7 +520,7 @@ export class BackendAPIIntegration extends EventEmitter {
   async searchMarkets(filter: MarketFilter = {}): Promise<Market[]> {
     try {
       const response = await this.restClient.getMarkets(filter);
-      
+
       // Cache markets
       response.data.forEach((market) => {
         this.marketsCache.set(market.condition_id, market);
@@ -504,7 +528,7 @@ export class BackendAPIIntegration extends EventEmitter {
 
       return response.data;
     } catch (error) {
-      console.error('[Backend API] Error searching markets:', error);
+      console.error("[Backend API] Error searching markets:", error);
       throw error;
     }
   }
@@ -515,8 +539,8 @@ export class BackendAPIIntegration extends EventEmitter {
   async getTrendingMarkets(limit = 10): Promise<Market[]> {
     return this.searchMarkets({
       active: true,
-      order_by: 'volume',
-      order_dir: 'desc',
+      order_by: "volume",
+      order_dir: "desc",
       limit,
     });
   }
@@ -530,7 +554,7 @@ export class BackendAPIIntegration extends EventEmitter {
    */
   async detectLeaderWallets(): Promise<LeaderWallet[]> {
     if (!this.leaderDetector) {
-      throw new Error('Leader detection is not enabled');
+      throw new Error("Leader detection is not enabled");
     }
 
     return await this.leaderDetector.discoverLeaderWallets();
@@ -541,7 +565,7 @@ export class BackendAPIIntegration extends EventEmitter {
    */
   async isLeaderWallet(walletAddress: string): Promise<boolean> {
     if (!this.leaderDetector) {
-      throw new Error('Leader detection is not enabled');
+      throw new Error("Leader detection is not enabled");
     }
 
     return await this.leaderDetector.isLeaderWallet(walletAddress);
@@ -550,9 +574,11 @@ export class BackendAPIIntegration extends EventEmitter {
   /**
    * Get leader wallet details
    */
-  async getLeaderWalletDetails(walletAddress: string): Promise<LeaderWallet | null> {
+  async getLeaderWalletDetails(
+    walletAddress: string
+  ): Promise<LeaderWallet | null> {
     if (!this.leaderDetector) {
-      throw new Error('Leader detection is not enabled');
+      throw new Error("Leader detection is not enabled");
     }
 
     return await this.leaderDetector.getLeaderDetails(walletAddress);
@@ -563,7 +589,7 @@ export class BackendAPIIntegration extends EventEmitter {
    */
   async monitorLeaderWallet(walletAddress: string): Promise<void> {
     if (!this.leaderDetector) {
-      throw new Error('Leader detection is not enabled');
+      throw new Error("Leader detection is not enabled");
     }
 
     await this.leaderDetector.monitorWallet(walletAddress);
@@ -633,7 +659,7 @@ export class BackendAPIIntegration extends EventEmitter {
   clearCache(): void {
     this.marketStatsCache.clear();
     this.marketsCache.clear();
-    console.log('[Backend API] Cache cleared');
+    console.log("[Backend API] Cache cleared");
   }
 
   /**
@@ -652,16 +678,16 @@ export class BackendAPIIntegration extends EventEmitter {
 
     this.wsClient.onConnect(() => {
       this.isConnected = true;
-      this.emit('connected');
+      this.emit("connected");
     });
 
     this.wsClient.onDisconnect(() => {
       this.isConnected = false;
-      this.emit('disconnected');
+      this.emit("disconnected");
     });
 
     this.wsClient.onError((error) => {
-      this.emit('error', error);
+      this.emit("error", error);
     });
   }
 
@@ -669,19 +695,23 @@ export class BackendAPIIntegration extends EventEmitter {
     if (!this.leaderDetector) return;
 
     this.leaderDetector.onLeaderTrade((wallet, trade) => {
-      this.emit('leader:trade', wallet, trade);
-      this.emit('trade:leader', wallet, trade);
+      this.emit("leader:trade", wallet, trade);
+      this.emit("trade:leader", wallet, trade);
     });
   }
 
   private async handleIncomingTrade(trade: Trade): Promise<void> {
     // Check if trade is from a leader wallet
     if (this.leaderDetector) {
-      const isLeader = await this.leaderDetector.isLeaderWallet(trade.maker_address);
+      const isLeader = await this.leaderDetector.isLeaderWallet(
+        trade.maker_address
+      );
       if (isLeader) {
-        const leaderDetails = await this.leaderDetector.getLeaderDetails(trade.maker_address);
+        const leaderDetails = await this.leaderDetector.getLeaderDetails(
+          trade.maker_address
+        );
         if (leaderDetails) {
-          this.emit('leader:trade', leaderDetails, trade);
+          this.emit("leader:trade", leaderDetails, trade);
         }
       }
     }
@@ -697,7 +727,9 @@ let backendAPIInstance: BackendAPIIntegration | null = null;
 /**
  * Get or create the singleton instance
  */
-export function getBackendAPI(config?: BackendAPIConfig): BackendAPIIntegration {
+export function getBackendAPI(
+  config?: BackendAPIConfig
+): BackendAPIIntegration {
   if (!backendAPIInstance) {
     backendAPIInstance = new BackendAPIIntegration(config);
   }
@@ -707,7 +739,9 @@ export function getBackendAPI(config?: BackendAPIConfig): BackendAPIIntegration 
 /**
  * Create a new instance (useful for testing or multiple configurations)
  */
-export function createBackendAPI(config?: BackendAPIConfig): BackendAPIIntegration {
+export function createBackendAPI(
+  config?: BackendAPIConfig
+): BackendAPIIntegration {
   return new BackendAPIIntegration(config);
 }
 

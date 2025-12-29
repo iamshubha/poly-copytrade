@@ -13,7 +13,8 @@ import {
     Bell,
     LogOut,
     Menu,
-    X
+    X,
+    UserSearch
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -45,6 +46,7 @@ export default function DashboardLayout({
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: Home },
+        { name: 'Traders', href: '/dashboard/traders', icon: UserSearch },
         { name: 'Markets', href: '/dashboard/markets', icon: BarChart3 },
         { name: 'Following', href: '/dashboard/following', icon: Users },
         { name: 'Trades', href: '/dashboard/trades', icon: TrendingUp },

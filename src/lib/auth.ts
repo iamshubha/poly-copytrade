@@ -13,64 +13,66 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          console.log('[Auth] Starting authorization...');
-          
+          console.log("[Auth] Starting authorization...");
+
           if (!credentials?.message || !credentials?.signature) {
-            console.error('[Auth] Missing credentials');
+            console.error("[Auth] Missing credentials");
             throw new Error("Missing credentials");
           }
 
-          console.log('[Auth] Parsing message...');
+          console.log("[Auth] Parsing message...");
           const siwe = new SiweMessage(JSON.parse(credentials.message));
-          console.log('[Auth] SIWE message parsed:', {
+          console.log("[Auth] SIWE message parsed:", {
             domain: siwe.domain,
             address: siwe.address,
             nonce: siwe.nonce,
           });
-          
+
           // Verify the signature (SIWE v3 returns SiweResponse)
-          console.log('[Auth] Verifying signature...');
-          const result = await siwe.verify({ signature: credentials.signature });
-          console.log('[Auth] Verification result:', {
+          console.log("[Auth] Verifying signature...");
+          const result = await siwe.verify({
+            signature: credentials.signature,
+          });
+          console.log("[Auth] Verification result:", {
             hasData: !!result.data,
             hasError: !!result.error,
             error: result.error,
           });
-          
+
           // Check if verification was successful
           if (result.error) {
             console.error("[Auth] SIWE verification failed:", result.error);
             throw new Error(result.error.type || "Invalid signature");
           }
-          
+
           if (!result.data) {
             console.error("[Auth] No data in verification result");
             throw new Error("Invalid signature");
           }
 
-          console.log('[Auth] Signature verified successfully');
+          console.log("[Auth] Signature verified successfully");
 
           // Get or create user
-          console.log('[Auth] Looking up user...');
+          console.log("[Auth] Looking up user...");
           let user = await prisma.user.findUnique({
             where: { address: siwe.address },
             include: { settings: true },
           });
 
-          console.log('[Auth] User found:', !!user);
+          console.log("[Auth] User found:", !!user);
 
           // Verify nonce matches
           if (user && user.nonce !== siwe.nonce) {
-            console.error("[Auth] Nonce mismatch:", { 
-              expected: user.nonce, 
-              received: siwe.nonce 
+            console.error("[Auth] Nonce mismatch:", {
+              expected: user.nonce,
+              received: siwe.nonce,
             });
             throw new Error("Invalid nonce");
           }
 
           if (!user) {
             // Create new user with default settings
-            console.log('[Auth] Creating new user...');
+            console.log("[Auth] Creating new user...");
             user = await prisma.user.create({
               data: {
                 address: siwe.address,
@@ -88,10 +90,10 @@ export const authOptions: NextAuthOptions = {
               },
               include: { settings: true },
             });
-            console.log('[Auth] New user created:', user.id);
+            console.log("[Auth] New user created:", user.id);
           }
 
-          console.log('[Auth] Authorization successful for:', user.address);
+          console.log("[Auth] Authorization successful for:", user.address);
           return {
             id: user.id,
             address: user.address,

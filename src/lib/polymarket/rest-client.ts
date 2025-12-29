@@ -43,10 +43,10 @@ export class PolymarketRestClient {
     this.client = axios.create({
       baseURL: this.config.apiUrl,
       timeout: this.config.timeout,
-      responseType: 'json',
+      responseType: "json",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
+        Accept: "application/json",
         ...(this.config.apiKey && {
           Authorization: `Bearer ${this.config.apiKey}`,
         }),
@@ -60,8 +60,10 @@ export class PolymarketRestClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        const url = config.baseURL + (config.url || '');
-        const fullUrl = config.params ? `${url}?${new URLSearchParams(config.params).toString()}` : url;
+        const url = config.baseURL + (config.url || "");
+        const fullUrl = config.params
+          ? `${url}?${new URLSearchParams(config.params).toString()}`
+          : url;
         console.log(
           `[Polymarket API] ${config.method?.toUpperCase()} ${fullUrl}`
         );
@@ -73,7 +75,13 @@ export class PolymarketRestClient {
     // Response interceptor with retry logic
     this.client.interceptors.response.use(
       (response) => {
-        console.log(`[Polymarket API] Response status: ${response.status}, data type: ${typeof response.data}, length: ${typeof response.data === 'string' ? response.data.length : 'N/A'}`);
+        console.log(
+          `[Polymarket API] Response status: ${
+            response.status
+          }, data type: ${typeof response.data}, length: ${
+            typeof response.data === "string" ? response.data.length : "N/A"
+          }`
+        );
         return response;
       },
       async (error: AxiosError) => {
@@ -139,12 +147,12 @@ export class PolymarketRestClient {
       // Use native fetch instead of axios for better Bun compatibility
       const url = `${this.config.apiUrl}/markets?${params.toString()}`;
       console.log(`[Polymarket REST] Fetching: ${url}`);
-      
+
       const response = await fetch(url, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
           ...(this.config.apiKey && {
             Authorization: `Bearer ${this.config.apiKey}`,
           }),
@@ -157,21 +165,25 @@ export class PolymarketRestClient {
       }
 
       const data = await response.json();
-      console.log(`[Polymarket REST] Received ${Array.isArray(data) ? data.length : 'non-array'} markets`);
-      
+      console.log(
+        `[Polymarket REST] Received ${
+          Array.isArray(data) ? data.length : "non-array"
+        } markets`
+      );
+
       if (Array.isArray(data) && data.length > 0) {
-        console.log('[Polymarket REST] Sample market:', {
+        console.log("[Polymarket REST] Sample market:", {
           id: data[0].id,
           conditionId: data[0].conditionId,
           question: data[0].question?.substring(0, 50),
           volume: data[0].volume,
-          liquidity: data[0].liquidity
+          liquidity: data[0].liquidity,
         });
       }
-      
+
       return data as Market[];
     } catch (error) {
-      console.error('[Polymarket REST] Error in getMarkets:', error);
+      console.error("[Polymarket REST] Error in getMarkets:", error);
       throw new PolymarketAPIError((error as Error).message);
     }
   }
@@ -184,12 +196,12 @@ export class PolymarketRestClient {
       // Use native fetch instead of axios for better Bun compatibility
       const url = `${this.config.apiUrl}/markets/${marketId}`;
       console.log(`[Polymarket REST] Fetching single market: ${url}`);
-      
+
       const response = await fetch(url, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
           ...(this.config.apiKey && {
             Authorization: `Bearer ${this.config.apiKey}`,
           }),
@@ -207,12 +219,15 @@ export class PolymarketRestClient {
         conditionId: data.conditionId,
         condition_id: data.condition_id,
       });
-      console.log(`[Polymarket REST] Successfully fetched market:`, data.question?.substring(0, 50));
-      
+      console.log(
+        `[Polymarket REST] Successfully fetched market:`,
+        data.question?.substring(0, 50)
+      );
+
       // Return as any to avoid type coercion - API returns camelCase but types expect snake_case
       return data;
     } catch (error) {
-      console.error('[Polymarket REST] Error in getMarket:', error);
+      console.error("[Polymarket REST] Error in getMarket:", error);
       throw new PolymarketAPIError((error as Error).message);
     }
   }

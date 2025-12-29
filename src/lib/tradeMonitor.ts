@@ -1,13 +1,17 @@
 /**
  * Trade Monitor Service
- * 
+ *
  * Monitors leader wallets and processes copy trades
  */
 
-import { EventEmitter } from 'events';
-import PolymarketClient, { Trade, LeaderWallet, TradeFilter } from './polymarketClient';
-import prisma from './prisma';
-import { CopyTradingEngine } from './copyEngine';
+import { EventEmitter } from "events";
+import PolymarketClient, {
+  Trade,
+  LeaderWallet,
+  TradeFilter,
+} from "./polymarketClient";
+import prisma from "./prisma";
+import { CopyTradingEngine } from "./copyEngine";
 
 export interface MonitorConfig {
   pollInterval?: number;
@@ -38,7 +42,7 @@ export class TradeMonitorService extends EventEmitter {
     config: MonitorConfig = {}
   ) {
     super();
-    
+
     this.client = client;
     this.copyEngine = copyEngine;
     this.config = {
@@ -54,20 +58,20 @@ export class TradeMonitorService extends EventEmitter {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log('⚠️  Monitor service already running');
+      console.log("⚠️  Monitor service already running");
       return;
     }
 
-    console.log('🚀 Starting trade monitor service...');
+    console.log("🚀 Starting trade monitor service...");
     this.isRunning = true;
 
     // Connect WebSocket if enabled
     if (this.config.enableWebSocket) {
       try {
         await this.client.connectWebSocket();
-        console.log('✅ WebSocket connected');
+        console.log("✅ WebSocket connected");
       } catch (error) {
-        console.error('⚠️  WebSocket connection failed, using polling only');
+        console.error("⚠️  WebSocket connection failed, using polling only");
       }
     }
 
@@ -78,7 +82,7 @@ export class TradeMonitorService extends EventEmitter {
     this.startMonitoring();
 
     console.log(`✅ Monitoring ${this.monitoredWallets.size} wallets`);
-    this.emit('started');
+    this.emit("started");
   }
 
   /**
@@ -89,18 +93,18 @@ export class TradeMonitorService extends EventEmitter {
       return;
     }
 
-    console.log('🛑 Stopping trade monitor service...');
+    console.log("🛑 Stopping trade monitor service...");
     this.isRunning = false;
 
     // Stop all active monitors
-    this.activeMonitors.forEach(cleanup => cleanup());
+    this.activeMonitors.forEach((cleanup) => cleanup());
     this.activeMonitors.clear();
 
     // Disconnect WebSocket
     this.client.disconnectWebSocket();
 
-    console.log('✅ Monitor service stopped');
-    this.emit('stopped');
+    console.log("✅ Monitor service stopped");
+    this.emit("stopped");
   }
 
   /**
@@ -108,17 +112,17 @@ export class TradeMonitorService extends EventEmitter {
    */
   async addWallet(wallet: MonitoredWallet): Promise<void> {
     if (this.monitoredWallets.size >= this.config.maxConcurrentMonitors) {
-      throw new Error('Max concurrent monitors reached');
+      throw new Error("Max concurrent monitors reached");
     }
 
     this.monitoredWallets.set(wallet.address, wallet);
-    
+
     if (this.isRunning && wallet.isActive) {
       await this.startMonitoringWallet(wallet.address);
     }
 
     console.log(`➕ Added wallet to monitoring: ${wallet.address}`);
-    this.emit('walletAdded', wallet);
+    this.emit("walletAdded", wallet);
   }
 
   /**
@@ -133,7 +137,7 @@ export class TradeMonitorService extends EventEmitter {
 
     this.monitoredWallets.delete(address);
     console.log(`➖ Removed wallet from monitoring: ${address}`);
-    this.emit('walletRemoved', address);
+    this.emit("walletRemoved", address);
   }
 
   /**
@@ -147,8 +151,8 @@ export class TradeMonitorService extends EventEmitter {
    * Detect and add top leader wallets
    */
   async addTopLeaders(count = 10, minVolume = 10000): Promise<LeaderWallet[]> {
-    console.log('🔍 Detecting top leader wallets...');
-    
+    console.log("🔍 Detecting top leader wallets...");
+
     const leaders = await this.client.detectLeaderWallets(minVolume, 50);
     const topLeaders = leaders.slice(0, count);
 
@@ -189,9 +193,11 @@ export class TradeMonitorService extends EventEmitter {
         }
       }
 
-      console.log(`📥 Loaded ${this.monitoredWallets.size} wallets from database`);
+      console.log(
+        `📥 Loaded ${this.monitoredWallets.size} wallets from database`
+      );
     } catch (error) {
-      console.error('Error loading monitored wallets:', error);
+      console.error("Error loading monitored wallets:", error);
     }
   }
 
@@ -219,7 +225,10 @@ export class TradeMonitorService extends EventEmitter {
     this.activeMonitors.set(address, cleanup);
   }
 
-  private async handleLeaderTrade(leaderAddress: string, trade: Trade): Promise<void> {
+  private async handleLeaderTrade(
+    leaderAddress: string,
+    trade: Trade
+  ): Promise<void> {
     console.log(`🔔 New trade from leader ${leaderAddress}:`, {
       market: trade.marketId,
       side: trade.side,
@@ -244,7 +253,7 @@ export class TradeMonitorService extends EventEmitter {
           price: trade.price,
           amount: trade.amount,
           shares: trade.size,
-          status: 'COMPLETED',
+          status: "COMPLETED",
           transactionHash: trade.transactionHash,
           createdAt: trade.timestamp,
         },
@@ -253,11 +262,10 @@ export class TradeMonitorService extends EventEmitter {
       // Trigger copy trades for followers
       await this.copyEngine.triggerCopyTrades(leaderAddress, trade);
 
-      this.emit('leaderTrade', { leaderAddress, trade });
-      
+      this.emit("leaderTrade", { leaderAddress, trade });
     } catch (error) {
       console.error(`Error processing leader trade:`, error);
-      this.emit('error', { leaderAddress, trade, error });
+      this.emit("error", { leaderAddress, trade, error });
     }
   }
 }

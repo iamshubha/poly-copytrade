@@ -20,11 +20,11 @@ export default function MarketsPage() {
                 sortBy,
                 sortOrder,
             });
-            
+
             if (searchQuery) {
                 params.append('search', searchQuery);
             }
-            
+
             if (categoryFilter !== 'all') {
                 params.append('category', categoryFilter);
             }
@@ -87,11 +87,10 @@ export default function MarketsPage() {
                         <button
                             key={category}
                             onClick={() => setCategoryFilter(category)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                categoryFilter === category
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${categoryFilter === category
                                     ? 'bg-primary-600 text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
+                                }`}
                         >
                             {category.charAt(0).toUpperCase() + category.slice(1)}
                         </button>
@@ -106,11 +105,10 @@ export default function MarketsPage() {
                             <button
                                 key={option.value}
                                 onClick={() => setSortBy(option.value)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                                    sortBy === option.value
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${sortBy === option.value
                                         ? 'bg-primary-600 text-white'
                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                }`}
+                                    }`}
                             >
                                 {option.label}
                             </button>
@@ -142,97 +140,97 @@ export default function MarketsPage() {
                             ? { href: `/dashboard/markets/${market.id}` }
                             : {};
                         return (
-                        <CardWrapper
-                            key={market.id || market.title}
-                            {...cardProps}
-                            className={`card hover:shadow-lg transition-shadow ${!hasId ? 'opacity-95 cursor-default' : ''}`}
-                        >
-                            {/* Market Image */}
-                            {market.imageUrl && (
-                                <img
-                                    src={market.imageUrl}
-                                    alt={market.title}
-                                    className="w-full h-48 object-cover rounded-lg mb-4"
-                                />
-                            )}
+                            <CardWrapper
+                                key={market.id || market.title}
+                                {...cardProps}
+                                className={`card hover:shadow-lg transition-shadow ${!hasId ? 'opacity-95 cursor-default' : ''}`}
+                            >
+                                {/* Market Image */}
+                                {market.imageUrl && (
+                                    <img
+                                        src={market.imageUrl}
+                                        alt={market.title}
+                                        className="w-full h-48 object-cover rounded-lg mb-4"
+                                    />
+                                )}
 
-                            {/* Market Title */}
-                            <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
-                                {market.title}
-                            </h3>
+                                {/* Market Title */}
+                                <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
+                                    {market.title}
+                                </h3>
 
-                            {!hasId && (
-                                <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1 inline-block mb-2">
-                                    Detail view unavailable for this market
-                                </p>
-                            )}
-
-                            {/* Market Description */}
-                            {market.description && (
-                                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                                    {market.description}
-                                </p>
-                            )}
-
-                            {/* Market Stats */}
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div className="flex items-center text-sm">
-                                    <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                                    <span className="text-gray-600">
-                                        Vol: ${(market.volume / 1000).toFixed(1)}k
-                                    </span>
-                                </div>
-                                <div className="flex items-center text-sm">
-                                    <TrendingUp className="h-4 w-4 text-gray-400 mr-1" />
-                                    <span className="text-gray-600">
-                                        Liq: ${(market.liquidity / 1000).toFixed(1)}k
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Market Prices */}
-                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div className="flex-1">
-                                    <p className="text-xs text-gray-600 mb-1">Yes</p>
-                                    <p className="text-lg font-bold text-green-600">
-                                        {(market.outcomesPrices[0] * 100).toFixed(1)}¢
+                                {!hasId && (
+                                    <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1 inline-block mb-2">
+                                        Detail view unavailable for this market
                                     </p>
-                                </div>
-                                <div className="flex-1 text-right">
-                                    <p className="text-xs text-gray-600 mb-1">No</p>
-                                    <p className="text-lg font-bold text-red-600">
-                                        {(market.outcomesPrices[1] * 100).toFixed(1)}¢
+                                )}
+
+                                {/* Market Description */}
+                                {market.description && (
+                                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                        {market.description}
                                     </p>
-                                </div>
-                            </div>
+                                )}
 
-                            {/* End Date */}
-                            {market.endDate && (
-                                <div className="flex items-center text-sm text-gray-500 mt-3">
-                                    <Clock className="h-4 w-4 mr-1" />
-                                    <span>
-                                        Ends {new Date(market.endDate).toLocaleDateString()}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Category Tags */}
-                            {market.category && (
-                                <div className="flex flex-wrap gap-2 mt-3">
-                                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded bg-primary-100 text-primary-800">
-                                        {market.category}
-                                    </span>
-                                    {market.tags?.slice(0, 2).map((tag: string) => (
-                                        <span
-                                            key={tag}
-                                            className="inline-flex px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700"
-                                        >
-                                            {tag}
+                                {/* Market Stats */}
+                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                    <div className="flex items-center text-sm">
+                                        <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
+                                        <span className="text-gray-600">
+                                            Vol: ${(market.volume / 1000).toFixed(1)}k
                                         </span>
-                                    ))}
+                                    </div>
+                                    <div className="flex items-center text-sm">
+                                        <TrendingUp className="h-4 w-4 text-gray-400 mr-1" />
+                                        <span className="text-gray-600">
+                                            Liq: ${(market.liquidity / 1000).toFixed(1)}k
+                                        </span>
+                                    </div>
                                 </div>
-                            )}
-                        </CardWrapper>
+
+                                {/* Market Prices */}
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div className="flex-1">
+                                        <p className="text-xs text-gray-600 mb-1">Yes</p>
+                                        <p className="text-lg font-bold text-green-600">
+                                            {(market.outcomesPrices[0] * 100).toFixed(1)}¢
+                                        </p>
+                                    </div>
+                                    <div className="flex-1 text-right">
+                                        <p className="text-xs text-gray-600 mb-1">No</p>
+                                        <p className="text-lg font-bold text-red-600">
+                                            {(market.outcomesPrices[1] * 100).toFixed(1)}¢
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* End Date */}
+                                {market.endDate && (
+                                    <div className="flex items-center text-sm text-gray-500 mt-3">
+                                        <Clock className="h-4 w-4 mr-1" />
+                                        <span>
+                                            Ends {new Date(market.endDate).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Category Tags */}
+                                {market.category && (
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded bg-primary-100 text-primary-800">
+                                            {market.category}
+                                        </span>
+                                        {market.tags?.slice(0, 2).map((tag: string) => (
+                                            <span
+                                                key={tag}
+                                                className="inline-flex px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardWrapper>
                         );
                     })}
                 </div>
