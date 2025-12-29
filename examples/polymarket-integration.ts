@@ -2,9 +2,9 @@
  * Example usage of Polymarket Integration Module
  */
 
-import PolymarketClient from "../lib/polymarketClient";
-import TradeMonitorService from "../lib/tradeMonitor";
-import { CopyTradingEngine } from "../lib/copyEngine";
+import PolymarketClient from "../src/lib/polymarketClient";
+import TradeMonitorService from "../src/lib/tradeMonitor";
+import { CopyTradingEngine } from "../src/lib/copyEngine";
 
 async function main() {
   console.log("🚀 Polymarket Integration Example\n");
