@@ -268,7 +268,7 @@ export default function SignInPage() {
                     </div>
 
                     <div className="mt-6 text-sm text-gray-600">
-                        <p>Don't have a wallet?</p>
+                        <p>Don&apos;t have a wallet?</p>
                         <div className="flex gap-4 justify-center mt-2">
                             <a
                                 href="https://phantom.app/"

@@ -63,7 +63,7 @@ export default function MarketDetailPage() {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
                     <p className="text-red-800 font-semibold">Market not found</p>
                     <p className="text-red-600 text-sm mt-2">
-                        The market you're looking for doesn't exist or has been removed.
+                        The market you&apos;re looking for doesn&apos;t exist or has been removed.
                     </p>
                 </div>
             </div>

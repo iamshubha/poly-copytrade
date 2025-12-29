@@ -76,7 +76,7 @@ export default function FollowingPage() {
             <div>
                 <h1 className="text-3xl font-bold text-gray-900">Following</h1>
                 <p className="text-gray-600 mt-1">
-                    Manage traders you're following and copy trading settings
+                    Manage traders you&apos;re following and copy trading settings
                 </p>
             </div>
 
@@ -250,7 +250,7 @@ export default function FollowingPage() {
                         Not following anyone yet
                     </h3>
                     <p className="text-gray-600 mb-6">
-                        Start by entering a trader's wallet address above
+                        Start by entering a trader&apos;s wallet address above
                     </p>
                 </div>
             )}
