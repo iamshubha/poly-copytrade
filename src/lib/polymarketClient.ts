@@ -157,19 +157,25 @@ export class PolymarketClient extends EventEmitter {
 
       // Handle different response structures
       let marketsData = response.data;
-      
+
       // If response is wrapped in data property
-      if (marketsData && typeof marketsData === 'object' && !Array.isArray(marketsData)) {
+      if (
+        marketsData &&
+        typeof marketsData === "object" &&
+        !Array.isArray(marketsData)
+      ) {
         if (marketsData.data && Array.isArray(marketsData.data)) {
           marketsData = marketsData.data;
         } else if (marketsData.markets && Array.isArray(marketsData.markets)) {
           marketsData = marketsData.markets;
         }
       }
-      
+
       // Ensure we have an array
       if (!Array.isArray(marketsData)) {
-        console.warn('⚠️  Markets API returned non-array data, using empty array');
+        console.warn(
+          "⚠️  Markets API returned non-array data, using empty array"
+        );
         return [];
       }
 
@@ -244,28 +250,28 @@ export class PolymarketClient extends EventEmitter {
     offset?: number;
     user?: string;
     market?: string;
-    side?: 'BUY' | 'SELL';
+    side?: "BUY" | "SELL";
   }): Promise<any[]> {
     try {
-      const dataApiUrl = 'https://data-api.polymarket.com';
+      const dataApiUrl = "https://data-api.polymarket.com";
       const queryParams = new URLSearchParams();
-      
-      queryParams.append('limit', String(params?.limit || 1000));
-      queryParams.append('offset', String(params?.offset || 0));
-      queryParams.append('takerOnly', 'false'); // Get both maker and taker trades
-      
-      if (params?.user) queryParams.append('user', params.user);
-      if (params?.market) queryParams.append('market', params.market);
-      if (params?.side) queryParams.append('side', params.side);
+
+      queryParams.append("limit", String(params?.limit || 1000));
+      queryParams.append("offset", String(params?.offset || 0));
+      queryParams.append("takerOnly", "false"); // Get both maker and taker trades
+
+      if (params?.user) queryParams.append("user", params.user);
+      if (params?.market) queryParams.append("market", params.market);
+      if (params?.side) queryParams.append("side", params.side);
 
       const url = `${dataApiUrl}/trades?${queryParams.toString()}`;
       console.log(`[Polymarket Data API] Fetching trades from: ${url}`);
 
       const response = await fetch(url, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
         signal: AbortSignal.timeout(30000),
       });
@@ -275,11 +281,15 @@ export class PolymarketClient extends EventEmitter {
       }
 
       const data = await response.json();
-      console.log(`[Polymarket Data API] Fetched ${Array.isArray(data) ? data.length : 0} trades`);
-      
+      console.log(
+        `[Polymarket Data API] Fetched ${
+          Array.isArray(data) ? data.length : 0
+        } trades`
+      );
+
       return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('[Polymarket Data API] Error fetching trades:', error);
+      console.error("[Polymarket Data API] Error fetching trades:", error);
       return [];
     }
   }
@@ -542,9 +552,13 @@ export class PolymarketClient extends EventEmitter {
         });
 
         if (trades.length === 0) break;
-        
+
         allTrades.push(...trades);
-        console.log(`📥 Batch ${i + 1}: Fetched ${trades.length} trades (Total: ${allTrades.length})`);
+        console.log(
+          `📥 Batch ${i + 1}: Fetched ${trades.length} trades (Total: ${
+            allTrades.length
+          })`
+        );
 
         // If we got less than batch size, we've reached the end
         if (trades.length < batchSize) break;
@@ -558,23 +572,30 @@ export class PolymarketClient extends EventEmitter {
       }
 
       // Aggregate trader statistics
-      const traderStats = new Map<string, {
-        address: string;
-        volume: number;
-        trades: number;
-        buyVolume: number;
-        sellVolume: number;
-        buyTrades: number;
-        sellTrades: number;
-        markets: Set<string>;
-        recentTrade: number;
-        name?: string;
-        profileImage?: string;
-      }>();
+      const traderStats = new Map<
+        string,
+        {
+          address: string;
+          volume: number;
+          trades: number;
+          buyVolume: number;
+          sellVolume: number;
+          buyTrades: number;
+          sellTrades: number;
+          markets: Set<string>;
+          recentTrade: number;
+          name?: string;
+          profileImage?: string;
+        }
+      >();
 
       for (const trade of allTrades) {
-        const address = (trade.proxyWallet || '').toLowerCase();
-        if (!address || address === '0x0000000000000000000000000000000000000000') continue;
+        const address = (trade.proxyWallet || "").toLowerCase();
+        if (
+          !address ||
+          address === "0x0000000000000000000000000000000000000000"
+        )
+          continue;
 
         if (!traderStats.has(address)) {
           traderStats.set(address, {
@@ -594,16 +615,16 @@ export class PolymarketClient extends EventEmitter {
 
         const stats = traderStats.get(address)!;
         const amount = (trade.size || 0) * (trade.price || 0);
-        
+
         stats.trades++;
         stats.volume += amount;
         stats.recentTrade = Math.max(stats.recentTrade, trade.timestamp || 0);
-        
+
         if (trade.conditionId) {
           stats.markets.add(trade.conditionId);
         }
-        
-        if (trade.side === 'BUY') {
+
+        if (trade.side === "BUY") {
           stats.buyVolume += amount;
           stats.buyTrades++;
         } else {
@@ -623,35 +644,42 @@ export class PolymarketClient extends EventEmitter {
           // Since we only have snapshot data, we'll use a different approach:
           // - Active traders (balanced buy/sell) get neutral to positive ROI
           // - One-sided traders get lower ROI
-          const balanceRatio = stats.sellTrades > 0 
-            ? Math.min(stats.buyTrades / stats.sellTrades, stats.sellTrades / stats.buyTrades)
-            : 0;
-          
+          const balanceRatio =
+            stats.sellTrades > 0
+              ? Math.min(
+                  stats.buyTrades / stats.sellTrades,
+                  stats.sellTrades / stats.buyTrades
+                )
+              : 0;
+
           // Base ROI calculation: difference between sell and buy volumes
           const volumeDiff = stats.sellVolume - stats.buyVolume;
-          const baseROI = stats.buyVolume > 0 ? (volumeDiff / stats.buyVolume) * 100 : 0;
-          
+          const baseROI =
+            stats.buyVolume > 0 ? (volumeDiff / stats.buyVolume) * 100 : 0;
+
           // Adjust ROI based on activity level and balance
           // Active traders with balanced trading get better ROI estimates
           const activityMultiplier = Math.min(stats.trades / 50, 2); // Cap at 2x for very active traders
-          const balanceMultiplier = 0.5 + (balanceRatio * 0.5); // 0.5 to 1.0 based on balance
-          
+          const balanceMultiplier = 0.5 + balanceRatio * 0.5; // 0.5 to 1.0 based on balance
+
           // Final ROI: clamp between realistic bounds
           let roi = baseROI * balanceMultiplier * activityMultiplier;
-          
+
           // If the calculation doesn't make sense, estimate based on activity
           if (Math.abs(roi) > 1000 || !isFinite(roi)) {
             // Estimate: more active traders tend to be more successful
             // Market participation suggests 5-15% ROI for active traders
-            roi = 5 + (Math.min(stats.trades / 100, 1) * 10) + (Math.random() * 5);
+            roi = 5 + Math.min(stats.trades / 100, 1) * 10 + Math.random() * 5;
           }
-          
+
           // Clamp ROI to reasonable bounds (-50% to +200%)
           roi = Math.max(-50, Math.min(200, roi));
-          
+
           // Calculate win rate based on ROI and activity
-          const winRate = stats.trades > 0 ? 
-            Math.max(0.35, Math.min(0.5 + (roi / 200), 0.75)) : 0.5;
+          const winRate =
+            stats.trades > 0
+              ? Math.max(0.35, Math.min(0.5 + roi / 200, 0.75))
+              : 0.5;
 
           leaders.push({
             address: stats.address,
@@ -668,17 +696,25 @@ export class PolymarketClient extends EventEmitter {
       // Sort by volume (most active traders)
       leaders.sort((a, b) => b.volume - a.volume);
 
-      console.log(`✅ Found ${leaders.length} qualified leaders (volume >= $${minVolume}, trades >= ${minTrades})`);
-      
+      console.log(
+        `✅ Found ${leaders.length} qualified leaders (volume >= $${minVolume}, trades >= ${minTrades})`
+      );
+
       if (leaders.length > 0) {
         console.log("🏆 Top 5 leaders by volume:");
         leaders.slice(0, 5).forEach((l, i) => {
-          console.log(`  ${i + 1}. ${l.address.substring(0, 10)}... - Volume: $${l.volume.toLocaleString()}, Trades: ${l.trades}, ROI: ${l.roi}%`);
+          console.log(
+            `  ${i + 1}. ${l.address.substring(
+              0,
+              10
+            )}... - Volume: $${l.volume.toLocaleString()}, Trades: ${
+              l.trades
+            }, ROI: ${l.roi}%`
+          );
         });
       }
 
       return leaders.slice(0, 100); // Return top 100
-      
     } catch (error) {
       console.error("❌ Error analyzing traders from Data API:", error);
       return [];
@@ -942,51 +978,56 @@ export class PolymarketClient extends EventEmitter {
     return 0.5; // 50% default
   }
 
-
-
   private async analyzeTopTradersFromRecentActivity(
     minVolume: number,
     minTrades: number
   ): Promise<LeaderWallet[]> {
     // Analyze top traders from recent market activity
-    console.log("📊 Analyzing recent activity for top traders from Polymarket...");
+    console.log(
+      "📊 Analyzing recent activity for top traders from Polymarket..."
+    );
 
     try {
       const markets = await this.getMarkets(50); // Fetch top 50 markets
-      
+
       if (markets.length === 0) {
         console.log("⚠️  No markets found from Polymarket API");
         return [];
       }
 
       console.log(`✅ Found ${markets.length} markets, analyzing trades...`);
-      
-      const traderStats = new Map<string, {
-        address: string;
-        volume: number;
-        trades: number;
-        buyVolume: number;
-        sellVolume: number;
-        markets: Set<string>;
-      }>();
+
+      const traderStats = new Map<
+        string,
+        {
+          address: string;
+          volume: number;
+          trades: number;
+          buyVolume: number;
+          sellVolume: number;
+          markets: Set<string>;
+        }
+      >();
 
       // Analyze top markets by volume
       const topMarkets = markets
-        .filter(m => m.volume > 10000) // At least $10k volume
+        .filter((m) => m.volume > 10000) // At least $10k volume
         .sort((a, b) => b.volume - a.volume)
         .slice(0, 20); // Top 20 by volume
 
-      console.log(`📈 Analyzing trades from ${topMarkets.length} high-volume markets...`);
+      console.log(
+        `📈 Analyzing trades from ${topMarkets.length} high-volume markets...`
+      );
 
       for (const market of topMarkets) {
         try {
           const trades = await this.getMarketTrades(market.id, 200);
-          
+
           if (trades.length === 0) continue;
 
           for (const trade of trades) {
             const address = trade.maker.toLowerCase();
-            
+
             if (!traderStats.has(address)) {
               traderStats.set(address, {
                 address,
@@ -1002,7 +1043,7 @@ export class PolymarketClient extends EventEmitter {
             stats.trades++;
             stats.volume += trade.amount;
             stats.markets.add(market.id);
-            
+
             if (trade.side === "BUY") {
               stats.buyVolume += trade.amount;
             } else {
@@ -1010,7 +1051,10 @@ export class PolymarketClient extends EventEmitter {
             }
           }
         } catch (error) {
-          console.error(`Error fetching trades for market ${market.id}:`, error);
+          console.error(
+            `Error fetching trades for market ${market.id}:`,
+            error
+          );
           continue;
         }
       }
@@ -1024,11 +1068,12 @@ export class PolymarketClient extends EventEmitter {
         if (stats.volume >= minVolume && stats.trades >= minTrades) {
           // Calculate approximate ROI based on buy/sell volume difference
           const profitEstimate = stats.sellVolume - stats.buyVolume;
-          const roi = stats.buyVolume > 0 ? (profitEstimate / stats.buyVolume) * 100 : 0;
-          
+          const roi =
+            stats.buyVolume > 0 ? (profitEstimate / stats.buyVolume) * 100 : 0;
+
           // Calculate win rate approximation
-          const winRate = stats.trades > 0 ? 
-            Math.min(0.5 + (roi / 100), 0.95) : 0.5;
+          const winRate =
+            stats.trades > 0 ? Math.min(0.5 + roi / 100, 0.95) : 0.5;
 
           leaders.push({
             address: stats.address,
@@ -1045,19 +1090,23 @@ export class PolymarketClient extends EventEmitter {
       // Sort by ROI
       leaders.sort((a, b) => b.roi - a.roi);
 
-      console.log(`✅ Found ${leaders.length} qualified leaders (volume >= $${minVolume}, trades >= ${minTrades})`);
-      
+      console.log(
+        `✅ Found ${leaders.length} qualified leaders (volume >= $${minVolume}, trades >= ${minTrades})`
+      );
+
       if (leaders.length > 0) {
-        console.log("🏆 Top 3 leaders:", leaders.slice(0, 3).map(l => ({
-          address: l.address.substring(0, 10) + "...",
-          roi: l.roi + "%",
-          volume: "$" + l.volume.toLocaleString(),
-          trades: l.trades,
-        })));
+        console.log(
+          "🏆 Top 3 leaders:",
+          leaders.slice(0, 3).map((l) => ({
+            address: l.address.substring(0, 10) + "...",
+            roi: l.roi + "%",
+            volume: "$" + l.volume.toLocaleString(),
+            trades: l.trades,
+          }))
+        );
       }
 
       return leaders.slice(0, 50); // Return top 50
-      
     } catch (error) {
       console.error("❌ Error analyzing traders:", error);
       return [];

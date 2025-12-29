@@ -17,7 +17,7 @@ async function testPolymarketTraders() {
     console.log("\n[Test 1] Fetching trades from Polymarket Data API...");
     const trades = await client.getAllTrades({ limit: 100 });
     console.log(`✅ Fetched ${trades.length} trades`);
-    
+
     if (trades.length > 0) {
       console.log("\nSample trade:");
       console.log({
@@ -32,7 +32,7 @@ async function testPolymarketTraders() {
     // Test 2: Detect leader wallets
     console.log("\n[Test 2] Detecting leader wallets...");
     console.log("Criteria: Min Volume = $100, Min Trades = 5");
-    
+
     const leaders = await client.detectLeaderWallets(100, 5);
     console.log(`\n✅ Found ${leaders.length} qualified leader wallets`);
 
@@ -46,9 +46,11 @@ async function testPolymarketTraders() {
 
       leaders.slice(0, 10).forEach((leader, index) => {
         console.log(
-          `${String(index + 1).padStart(4)} | ${leader.address.padEnd(44)} | $${String(
-            leader.volume.toLocaleString()
-          ).padStart(10)} | ${String(leader.trades).padStart(6)} | ${String(
+          `${String(index + 1).padStart(4)} | ${leader.address.padEnd(
+            44
+          )} | $${String(leader.volume.toLocaleString()).padStart(
+            10
+          )} | ${String(leader.trades).padStart(6)} | ${String(
             leader.roi.toFixed(2) + "%"
           ).padStart(8)} | ${(leader.winRate * 100).toFixed(1)}%`
         );
@@ -84,7 +86,6 @@ async function testPolymarketTraders() {
     console.log("\n" + "=".repeat(60));
     console.log("✅ All tests completed successfully!");
     console.log("=".repeat(60));
-
   } catch (error) {
     console.error("\n❌ Test failed:", error);
     process.exit(1);

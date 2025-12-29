@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
     const minVolume = parseInt(searchParams.get("minVolume") || "5000"); // Lowered from 10000
     const minTrades = parseInt(searchParams.get("minTrades") || "20"); // Lowered from 50
 
-    console.log(`[API] Fetching Polymarket leader wallets (min volume: $${minVolume}, min trades: ${minTrades})...`);
+    console.log(
+      `[API] Fetching Polymarket leader wallets (min volume: $${minVolume}, min trades: ${minTrades})...`
+    );
 
     // Detect leader wallets from Polymarket
     const leaders = await polymarketClient.detectLeaderWallets(
@@ -36,6 +38,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[API] Error fetching Polymarket leaders:", error);
-    return errorResponse(error?.message || "Failed to fetch Polymarket leaders");
+    return errorResponse(
+      error?.message || "Failed to fetch Polymarket leaders"
+    );
   }
 }

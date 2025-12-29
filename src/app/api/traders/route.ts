@@ -71,9 +71,7 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
 
         // Calculate average profit per trade
         const avgProfit =
-          completedTrades.length > 0
-            ? totalProfit / completedTrades.length
-            : 0;
+          completedTrades.length > 0 ? totalProfit / completedTrades.length : 0;
 
         return {
           id: trader.id,
