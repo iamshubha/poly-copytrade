@@ -117,11 +117,15 @@ export async function GET(req: NextRequest) {
     // Client-side category filtering (Polymarket API doesn't support this well)
     if (category && category !== "all" && markets.length > 0) {
       const cat = category.toLowerCase();
-      markets = markets.filter((market: { tags?: string[]; question?: string }) => {
-        const tags = (market.tags || []).map((t: string) => t.toLowerCase());
-        const title = (market.question || "").toLowerCase();
-        return tags.some((t: string) => t.includes(cat)) || title.includes(cat);
-      });
+      markets = markets.filter(
+        (market: { tags?: string[]; question?: string }) => {
+          const tags = (market.tags || []).map((t: string) => t.toLowerCase());
+          const title = (market.question || "").toLowerCase();
+          return (
+            tags.some((t: string) => t.includes(cat)) || title.includes(cat)
+          );
+        }
+      );
       console.log(
         `[Markets API] After category filter: ${markets.length} markets`
       );

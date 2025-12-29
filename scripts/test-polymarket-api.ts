@@ -81,8 +81,10 @@ async function testEndpoint(name: string, url: string) {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(`   ❌ Failed: ${errorMessage}`);
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as { response: { status: number; statusText: string } };
+    if (error && typeof error === "object" && "response" in error) {
+      const axiosError = error as {
+        response: { status: number; statusText: string };
+      };
       console.log(`   📄 Status: ${axiosError.response.status}`);
       console.log(`   📝 Status Text: ${axiosError.response.statusText}`);
     }

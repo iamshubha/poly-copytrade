@@ -131,7 +131,11 @@ async function saveMarketsToDatabase(markets: PolymarketMarket[]) {
       console.log(`  ✅ ${saved}. ${marketData.title.slice(0, 60)}...`);
     } catch (error) {
       skipped++;
-      console.log(`  ⚠️  Skipped market: ${error instanceof Error ? error.message : String(error)}`);
+      console.log(
+        `  ⚠️  Skipped market: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
     }
   }
 

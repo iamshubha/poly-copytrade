@@ -28,7 +28,10 @@ async function testRestClient() {
 
     return { success: true, markets };
   } catch (error) {
-    console.error("   ❌ REST Client Error:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "   ❌ REST Client Error:",
+      error instanceof Error ? error.message : String(error)
+    );
     return { success: false, error };
   }
 }
@@ -73,6 +76,9 @@ async function runAllTests() {
 
 // Run tests
 runAllTests().catch((error) => {
-  console.error("\n❌ Fatal error:", error instanceof Error ? error.message : String(error));
+  console.error(
+    "\n❌ Fatal error:",
+    error instanceof Error ? error.message : String(error)
+  );
   process.exit(1);
 });

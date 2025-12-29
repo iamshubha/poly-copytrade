@@ -324,7 +324,10 @@ export class BackendAPIIntegration extends EventEmitter {
       // REST polling subscription
       const interval = setInterval(async () => {
         try {
-          const trades = await this.restClient.getWalletTrades(walletAddress, 10);
+          const trades = await this.restClient.getWalletTrades(
+            walletAddress,
+            10
+          );
 
           trades.forEach((trade) => {
             this.emit("trade", trade);
@@ -388,9 +391,13 @@ export class BackendAPIIntegration extends EventEmitter {
 
     if (subscription.type === "websocket" && this.wsClient) {
       if (subscription.marketId) {
-        await this.wsClient.unsubscribe(`market:${subscription.marketId}:trades`);
+        await this.wsClient.unsubscribe(
+          `market:${subscription.marketId}:trades`
+        );
       } else if (subscription.walletAddress) {
-        await this.wsClient.unsubscribe(`wallet:${subscription.walletAddress}:trades`);
+        await this.wsClient.unsubscribe(
+          `wallet:${subscription.walletAddress}:trades`
+        );
       }
     } else if (subscription.type === "polling") {
       const interval = this.pollingIntervals.get(subscriptionId);
