@@ -62,7 +62,7 @@ async function fetchPolymarketMarkets(limit = 20): Promise<PolymarketMarket[]> {
       return response.data;
     } catch (error2) {
       console.error("❌ Failed to fetch from both APIs");
-      console.error("Error:", error2.message);
+      console.error("Error:", error2 instanceof Error ? error2.message : String(error2));
       return [];
     }
   }
