@@ -104,7 +104,7 @@ export async function GET(req: NextRequest) {
     if (search && markets.length > 0) {
       const searchLower = search.toLowerCase();
       markets = markets.filter(
-        (market) =>
+        (market: { question?: string; description?: string }) =>
           market.question?.toLowerCase().includes(searchLower) ||
           market.description?.toLowerCase().includes(searchLower) ||
           false
@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
     // Client-side category filtering (Polymarket API doesn't support this well)
     if (category && category !== "all" && markets.length > 0) {
       const cat = category.toLowerCase();
-      markets = markets.filter((market) => {
+      markets = markets.filter((market: { tags?: string[]; question?: string }) => {
         const tags = (market.tags || []).map((t: string) => t.toLowerCase());
         const title = (market.question || "").toLowerCase();
         return tags.some((t: string) => t.includes(cat)) || title.includes(cat);
@@ -128,7 +128,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Client-side sorting
-    markets.sort((a, b) => {
+    markets.sort((a: any, b: any) => {
       let aValue: any, bValue: any;
 
       switch (sortBy) {
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
     markets = markets.slice(0, limit);
 
     // Transform markets to match frontend expectations
-    const transformedMarkets = markets.map((market) => {
+    const transformedMarkets = markets.map((market: any) => {
       // Use the numeric ID for the market detail page URL, keep conditionId as separate field
       const id = market.id || market.condition_id || market.conditionId;
 

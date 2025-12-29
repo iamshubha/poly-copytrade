@@ -178,16 +178,15 @@ export class TradeMonitorService extends EventEmitter {
     try {
       // Load from database - get all follow relationships
       const follows = await prisma.follow.findMany({
-        where: { isActive: true },
         include: {
           following: true,
         },
       });
 
       for (const follow of follows) {
-        if (!this.monitoredWallets.has(follow.followingAddress)) {
-          this.monitoredWallets.set(follow.followingAddress, {
-            address: follow.followingAddress,
+        if (!this.monitoredWallets.has(follow.following.address)) {
+          this.monitoredWallets.set(follow.following.address, {
+            address: follow.following.address,
             isActive: true,
           });
         }
@@ -248,20 +247,21 @@ export class TradeMonitorService extends EventEmitter {
           id: trade.id,
           userId: leaderAddress,
           marketId: trade.marketId,
+          marketTitle: "Unknown", // Would need to fetch market details
           outcomeIndex: trade.outcome,
+          outcomeName: trade.outcome === 0 ? "Yes" : "No",
           side: trade.side,
           price: trade.price,
           amount: trade.amount,
           shares: trade.size,
+          fee: 0,
           status: "COMPLETED",
           transactionHash: trade.transactionHash,
           createdAt: trade.timestamp,
         },
       });
 
-      // Trigger copy trades for followers
-      await this.copyEngine.triggerCopyTrades(leaderAddress, trade);
-
+      // Emit event for copy trades (handled by listeners)
       this.emit("leaderTrade", { leaderAddress, trade });
     } catch (error) {
       console.error(`Error processing leader trade:`, error);

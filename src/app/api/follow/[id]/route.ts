@@ -3,14 +3,17 @@ import { withAuth, successResponse, errorResponse } from "@/lib/api";
 import prisma from "@/lib/prisma";
 
 export const DELETE = withAuth(
-  async (
-    req: NextRequest,
-    userId: string,
-    { params }: { params: { id: string } }
-  ) => {
+  async (req: NextRequest, userId: string) => {
     try {
+      // Extract id from URL
+      const id = req.url.split('/').pop();
+      
+      if (!id) {
+        return errorResponse("Invalid ID", 400);
+      }
+
       const follow = await prisma.follow.findUnique({
-        where: { id: params.id },
+        where: { id },
       });
 
       if (!follow) {
@@ -22,7 +25,7 @@ export const DELETE = withAuth(
       }
 
       await prisma.follow.delete({
-        where: { id: params.id },
+        where: { id },
       });
 
       return successResponse({ message: "Unfollowed successfully" });
@@ -33,16 +36,19 @@ export const DELETE = withAuth(
 );
 
 export const PATCH = withAuth(
-  async (
-    req: NextRequest,
-    userId: string,
-    { params }: { params: { id: string } }
-  ) => {
+  async (req: NextRequest, userId: string) => {
     try {
+      // Extract id from URL
+      const id = req.url.split('/').pop();
+      
+      if (!id) {
+        return errorResponse("Invalid ID", 400);
+      }
+
       const data = await req.json();
 
       const follow = await prisma.follow.findUnique({
-        where: { id: params.id },
+        where: { id },
         include: { copySettings: true },
       });
 
@@ -56,7 +62,7 @@ export const PATCH = withAuth(
 
       // Update copy settings
       const updated = await prisma.followCopySettings.update({
-        where: { followId: params.id },
+        where: { followId: id },
         data,
       });
 

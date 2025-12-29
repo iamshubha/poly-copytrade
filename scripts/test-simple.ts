@@ -14,7 +14,7 @@ async function test() {
   try {
     console.log("Connecting to database...");
     const result =
-      await prisma.$queryRaw`SELECT NOW() as time, version() as ver`;
+      await prisma.$queryRaw`SELECT NOW() as time, version() as ver` as Array<{ time: Date; ver: string }>;
     console.log("✅ Connected!");
     console.log("Time:", result[0].time);
     console.log("");
@@ -25,7 +25,7 @@ async function test() {
 
     console.log("\n✅ Database working!");
   } catch (e) {
-    console.error("❌ Error:", e.message);
+    console.error("❌ Error:", e instanceof Error ? e.message : String(e));
     process.exit(1);
   } finally {
     await prisma.$disconnect();

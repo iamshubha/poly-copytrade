@@ -3,11 +3,7 @@
  * Demonstrates how to use the Polymarket API integration
  */
 
-import polymarket, {
-  Trade,
-  WSMarketUpdate,
-  LeaderWallet,
-} from "../lib/polymarket";
+import polymarket from "../lib/polymarket";
 
 // ============================================
 // REST API EXAMPLES

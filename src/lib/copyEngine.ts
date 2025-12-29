@@ -75,13 +75,35 @@ export class CopyTradingEngine {
         },
       });
 
-      // Execute trade on Polymarket
-      await this.executeTrade(trade);
+      // Execute trade on Polymarket (assert side type for TypeScript)
+      await this.executeTrade({
+        ...trade,
+        side: trade.side as "BUY" | "SELL",
+        transactionHash: trade.transactionHash ?? undefined,
+        blockNumber: trade.blockNumber ?? undefined,
+        executedAt: trade.executedAt ?? undefined,
+        error: trade.error ?? undefined,
+      });
 
-      // Trigger copy trades for followers
-      await this.triggerCopyTrades(trade);
+      // Trigger copy trades for followers (assert side type for TypeScript)
+      await this.triggerCopyTrades({
+        ...trade,
+        side: trade.side as "BUY" | "SELL",
+        transactionHash: trade.transactionHash ?? undefined,
+        blockNumber: trade.blockNumber ?? undefined,
+        executedAt: trade.executedAt ?? undefined,
+        error: trade.error ?? undefined,
+      });
 
-      return trade;
+      // Return trade with correct types
+      return {
+        ...trade,
+        side: trade.side as "BUY" | "SELL",
+        transactionHash: trade.transactionHash ?? undefined,
+        blockNumber: trade.blockNumber ?? undefined,
+        executedAt: trade.executedAt ?? undefined,
+        error: trade.error ?? undefined,
+      };
     } catch (error) {
       console.error("Error processing trade:", error);
       throw error;
@@ -286,10 +308,27 @@ export class CopyTradingEngine {
         },
       });
 
-      // Execute the copied trade
-      await this.executeCopiedTrade(copiedTrade);
+      // Execute the copied trade (convert Prisma types to TypeScript types)
+      await this.executeCopiedTrade({
+        ...copiedTrade,
+        userId: copiedTrade.copierId, // CopiedTrade extends Trade which requires userId
+        side: copiedTrade.side as "BUY" | "SELL",
+        transactionHash: copiedTrade.transactionHash ?? undefined,
+        blockNumber: copiedTrade.blockNumber ?? undefined,
+        executedAt: copiedTrade.executedAt ?? undefined,
+        error: copiedTrade.error ?? undefined,
+      });
 
-      return copiedTrade;
+      // Return with correct types
+      return {
+        ...copiedTrade,
+        userId: copiedTrade.copierId,
+        side: copiedTrade.side as "BUY" | "SELL",
+        transactionHash: copiedTrade.transactionHash ?? undefined,
+        blockNumber: copiedTrade.blockNumber ?? undefined,
+        executedAt: copiedTrade.executedAt ?? undefined,
+        error: copiedTrade.error ?? undefined,
+      };
     } catch (error) {
       console.error("Error processing copy trade:", error);
       return null;

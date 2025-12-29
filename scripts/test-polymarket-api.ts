@@ -79,12 +79,14 @@ async function testEndpoint(name: string, url: string) {
       count: Array.isArray(response.data) ? response.data.length : 0,
     };
   } catch (error) {
-    console.log(`   ❌ Failed: ${error.message}`);
-    if (error.response) {
-      console.log(`   📄 Status: ${error.response.status}`);
-      console.log(`   📝 Status Text: ${error.response.statusText}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(`   ❌ Failed: ${errorMessage}`);
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response: { status: number; statusText: string } };
+      console.log(`   📄 Status: ${axiosError.response.status}`);
+      console.log(`   📝 Status Text: ${axiosError.response.statusText}`);
     }
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage };
   }
 }
 

@@ -132,7 +132,7 @@ export default function DashboardPage() {
 
                     {stats?.trades?.data?.trades?.length > 0 ? (
                         <div className="space-y-3">
-                            {stats.trades.data.trades.slice(0, 5).map((trade: any) => (
+                            {stats?.trades?.data?.trades.slice(0, 5).map((trade: any) => (
                                 <div
                                     key={trade.id}
                                     className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"

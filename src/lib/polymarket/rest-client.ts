@@ -111,8 +111,9 @@ export class PolymarketRestClient {
 
   private handleError(error: AxiosError): PolymarketAPIError {
     if (error.response) {
+      const responseData = error.response.data as { message?: string } | undefined;
       return new PolymarketAPIError(
-        error.response.data?.message || error.message,
+        responseData?.message || error.message,
         error.response.status,
         error.response.data
       );

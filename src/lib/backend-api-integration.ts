@@ -165,7 +165,7 @@ export class BackendAPIIntegration extends EventEmitter {
           this.config.leaderDetection
         );
         this.setupLeaderDetectorHandlers();
-        await this.leaderDetector.start();
+        await this.leaderDetector.startMonitoring();
       }
 
       this.isInitialized = true;
@@ -198,7 +198,7 @@ export class BackendAPIIntegration extends EventEmitter {
 
     // Stop leader detector
     if (this.leaderDetector) {
-      await this.leaderDetector.stop();
+      this.leaderDetector.stopMonitoring();
       this.leaderDetector = null;
     }
 
@@ -233,7 +233,7 @@ export class BackendAPIIntegration extends EventEmitter {
 
     if (useWS && this.wsClient) {
       // WebSocket subscription
-      await this.wsClient.subscribeTrades(marketId, (trade) => {
+      await this.wsClient.subscribeToMarketTrades(marketId, (trade) => {
         this.emit("trade", trade);
         this.emit("trade:market", marketId, trade);
         this.handleIncomingTrade(trade);
@@ -253,11 +253,9 @@ export class BackendAPIIntegration extends EventEmitter {
       // REST polling subscription
       const interval = setInterval(async () => {
         try {
-          const trades = await this.restClient.getMarketTrades(marketId, {
-            limit: 10,
-          });
+          const trades = await this.restClient.getMarketTrades(marketId, 10);
 
-          trades.data.forEach((trade) => {
+          trades.forEach((trade) => {
             this.emit("trade", trade);
             this.emit("trade:market", marketId, trade);
             this.handleIncomingTrade(trade);
@@ -306,7 +304,7 @@ export class BackendAPIIntegration extends EventEmitter {
 
     if (useWS && this.wsClient) {
       // WebSocket subscription
-      await this.wsClient.subscribeWallet(walletAddress, (trade) => {
+      await this.wsClient.subscribeToWalletTrades(walletAddress, (trade) => {
         this.emit("trade", trade);
         this.emit("trade:wallet", walletAddress, trade);
         this.handleIncomingTrade(trade);
@@ -326,11 +324,9 @@ export class BackendAPIIntegration extends EventEmitter {
       // REST polling subscription
       const interval = setInterval(async () => {
         try {
-          const trades = await this.restClient.getWalletTrades(walletAddress, {
-            limit: 10,
-          });
+          const trades = await this.restClient.getWalletTrades(walletAddress, 10);
 
-          trades.data.forEach((trade) => {
+          trades.forEach((trade) => {
             this.emit("trade", trade);
             this.emit("trade:wallet", walletAddress, trade);
             this.handleIncomingTrade(trade);
@@ -374,26 +370,10 @@ export class BackendAPIIntegration extends EventEmitter {
       return subscriptionId;
     }
 
-    if (useWS && this.wsClient) {
-      // WebSocket subscription to all trades
-      await this.wsClient.subscribeAllTrades((trade) => {
-        this.emit("trade", trade);
-        this.handleIncomingTrade(trade);
-      });
-
-      this.subscriptions.set(subscriptionId, {
-        id: subscriptionId,
-        active: true,
-        type: "websocket",
-      });
-
-      console.log("[Backend API] Subscribed to all trades via WebSocket");
-    } else {
-      console.warn("[Backend API] All trades subscription requires WebSocket");
-      throw new Error("All trades subscription requires WebSocket mode");
-    }
-
-    return subscriptionId;
+    // All trades subscription is not supported by the WebSocket client
+    // This would require subscribing to multiple markets individually
+    console.warn("[Backend API] All trades subscription not yet implemented");
+    throw new Error("All trades subscription not yet implemented");
   }
 
   /**
@@ -408,9 +388,9 @@ export class BackendAPIIntegration extends EventEmitter {
 
     if (subscription.type === "websocket" && this.wsClient) {
       if (subscription.marketId) {
-        await this.wsClient.unsubscribeTrades(subscription.marketId);
+        await this.wsClient.unsubscribe(`market:${subscription.marketId}:trades`);
       } else if (subscription.walletAddress) {
-        await this.wsClient.unsubscribeWallet(subscription.walletAddress);
+        await this.wsClient.unsubscribe(`wallet:${subscription.walletAddress}:trades`);
       }
     } else if (subscription.type === "polling") {
       const interval = this.pollingIntervals.get(subscriptionId);
@@ -519,14 +499,14 @@ export class BackendAPIIntegration extends EventEmitter {
    */
   async searchMarkets(filter: MarketFilter = {}): Promise<Market[]> {
     try {
-      const response = await this.restClient.getMarkets(filter);
+      const markets = await this.restClient.getMarkets(filter);
 
       // Cache markets
-      response.data.forEach((market) => {
+      markets.forEach((market) => {
         this.marketsCache.set(market.condition_id, market);
       });
 
-      return response.data;
+      return markets;
     } catch (error) {
       console.error("[Backend API] Error searching markets:", error);
       throw error;
@@ -581,7 +561,7 @@ export class BackendAPIIntegration extends EventEmitter {
       throw new Error("Leader detection is not enabled");
     }
 
-    return await this.leaderDetector.getLeaderDetails(walletAddress);
+    return this.leaderDetector.getLeader(walletAddress) || null;
   }
 
   /**
@@ -592,7 +572,8 @@ export class BackendAPIIntegration extends EventEmitter {
       throw new Error("Leader detection is not enabled");
     }
 
-    await this.leaderDetector.monitorWallet(walletAddress);
+    // Monitor wallet by subscribing to wallet trades
+    await this.subscribeToWalletTrades(walletAddress);
     console.log(`[Backend API] Monitoring leader wallet ${walletAddress}`);
   }
 
@@ -707,7 +688,7 @@ export class BackendAPIIntegration extends EventEmitter {
         trade.maker_address
       );
       if (isLeader) {
-        const leaderDetails = await this.leaderDetector.getLeaderDetails(
+        const leaderDetails = this.leaderDetector.getLeader(
           trade.maker_address
         );
         if (leaderDetails) {

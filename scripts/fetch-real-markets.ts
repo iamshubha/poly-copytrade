@@ -62,7 +62,10 @@ async function fetchPolymarketMarkets(limit = 20): Promise<PolymarketMarket[]> {
       return response.data;
     } catch (error2) {
       console.error("❌ Failed to fetch from both APIs");
-      console.error("Error:", error2 instanceof Error ? error2.message : String(error2));
+      console.error(
+        "Error:",
+        error2 instanceof Error ? error2.message : String(error2)
+      );
       return [];
     }
   }
@@ -128,7 +131,7 @@ async function saveMarketsToDatabase(markets: PolymarketMarket[]) {
       console.log(`  ✅ ${saved}. ${marketData.title.slice(0, 60)}...`);
     } catch (error) {
       skipped++;
-      console.log(`  ⚠️  Skipped market: ${error.message}`);
+      console.log(`  ⚠️  Skipped market: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -193,7 +196,7 @@ async function main() {
     console.log("   npm run db:studio");
   } catch (error) {
     console.error("\n❌ Error fetching markets:");
-    console.error(error.message);
+    console.error(error instanceof Error ? error.message : String(error));
     console.error(
       "\n💡 The application will continue working with seeded data."
     );

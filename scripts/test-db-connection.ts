@@ -17,7 +17,7 @@ async function testConnection() {
 
     // Get database info
     const result =
-      await prisma.$queryRaw`SELECT NOW() as current_time, version() as db_version`;
+      await prisma.$queryRaw`SELECT NOW() as current_time, version() as db_version` as Array<{ current_time: Date; db_version: string }>;
     console.log("✅ Prisma connected successfully");
     console.log("   Time:", result[0].current_time);
     console.log("   Version:", result[0].db_version.split("\n")[0]);
@@ -63,7 +63,7 @@ async function testConnection() {
       await redis.quit();
     } catch (error) {
       console.log("⚠️  Redis connection failed");
-      console.log("   Error:", error.message);
+      console.log("   Error:", error instanceof Error ? error.message : String(error));
       console.log("   Make sure Redis is running: docker-compose up -d");
     }
     console.log("");
@@ -72,7 +72,7 @@ async function testConnection() {
     console.log("\n🚀 System is ready");
   } catch (error) {
     console.error("❌ Database connection failed:");
-    console.error(error.message);
+    console.error(error instanceof Error ? error.message : String(error));
     console.error("\nTroubleshooting:");
     console.error(
       "1. Make sure Docker containers are running: docker-compose up -d"

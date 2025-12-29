@@ -44,6 +44,9 @@ export const POST = withAuth(async (req: NextRequest, userId: string) => {
         },
       },
       include: {
+        follower: {
+          select: { id: true, address: true },
+        },
         following: {
           select: { id: true, address: true },
         },

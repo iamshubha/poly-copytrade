@@ -177,13 +177,12 @@ export class LeaderWalletDetector {
 
     // Get followed wallets from database
     const follows = await prisma.follow.findMany({
-      where: { active: true },
-      include: { trader: true },
+      include: { following: true },
     });
 
     // Add followed wallets to monitoring
     for (const follow of follows) {
-      await this.addWalletToMonitor(follow.traderId);
+      await this.addWalletToMonitor(follow.followingId);
     }
 
     // Start WebSocket monitoring if enabled
@@ -380,11 +379,15 @@ export class LeaderWalletDetector {
           id: trade.id,
           userId: walletAddress,
           marketId: trade.market,
+          marketTitle: "Unknown", // Would need to fetch market details
           outcomeIndex: 0, // Would need to map asset_id to outcome
+          outcomeName: "Unknown",
           side: trade.side,
           amount: parseFloat(trade.size),
+          shares: parseFloat(trade.size), // Approximation
           price: parseFloat(trade.price),
-          status: "EXECUTED",
+          fee: 0,
+          status: "COMPLETED",
           executedAt: new Date(trade.timestamp),
         },
       });
