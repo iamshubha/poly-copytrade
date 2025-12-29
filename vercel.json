@@ -5,20 +5,5 @@
       "src": "package.json",
       "use": "@vercel/next"
     }
-  ],
-  "env": {
-    "POSTGRES_URL": "@postgres_url",
-    "POSTGRES_PRISMA_URL": "@postgres_prisma_url",
-    "POSTGRES_URL_NON_POOLING": "@postgres_url_non_pooling",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url",
-    "REDIS_URL": "@redis_url"
-  },
-  "build": {
-    "env": {
-      "POSTGRES_URL": "@postgres_url",
-      "POSTGRES_PRISMA_URL": "@postgres_prisma_url",
-      "POSTGRES_URL_NON_POOLING": "@postgres_url_non_pooling"
-    }
-  }
+  ]
 }
