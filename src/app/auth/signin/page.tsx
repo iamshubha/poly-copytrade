@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { SiweMessage } from 'siwe';
-import { getAddress } from 'ethers';
 import { Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -65,7 +64,7 @@ export default function SignInPage() {
             });
 
             // Convert to checksum address (EIP-55 format)
-            const userAddress = getAddress(accounts[0]);
+            const userAddress = accounts[0].toLowerCase();
             console.log('[Auth] Connected address:', userAddress);
             setAddress(userAddress);
 

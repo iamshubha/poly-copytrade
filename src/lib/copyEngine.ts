@@ -105,7 +105,7 @@ export class CopyTradingEngine {
         error: trade.error ?? undefined,
       });
 
-      log.logTrade(trade);
+      log.logTrade('trade-processed', trade);
       log.info('Trade processed successfully', { tradeId: trade.id });
 
       // Return trade with correct types

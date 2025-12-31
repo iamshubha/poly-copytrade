@@ -12,7 +12,7 @@
  */
 
 import { ClobClient, type Chain } from '@polymarket/clob-client';
-import type { 
+import type {
   OrderBookSummary,
   MarketPrice,
   PaginationPayload,
@@ -126,7 +126,7 @@ export class PolymarketSDKClient {
           const response: PaginationPayload = simplified
             ? await this.client.getSimplifiedMarkets(nextCursor)
             : await this.client.getMarkets(nextCursor);
-            
+
           console.log('[SDK] Response:', {
             dataLength: response.data?.length || 0,
             nextCursor: response.next_cursor,
@@ -136,7 +136,7 @@ export class PolymarketSDKClient {
             hasData: !!response.data,
             rawResponse: JSON.stringify(response).substring(0, 200),
           });
-          
+
           if (response.data && Array.isArray(response.data)) {
             allMarkets = [...allMarkets, ...response.data];
           } else {
@@ -342,8 +342,8 @@ export class PolymarketSDKClient {
       question: market.question || market.description || 'Unknown Market',
       description: market.description || '',
       outcomes: market.outcomes || market.outcome_prices?.map((_: any, i: number) => `Outcome ${i + 1}`) || ['Yes', 'No'],
-      outcomesPrices: market.outcome_prices 
-        ? market.outcome_prices.map((p: string) => parseFloat(p)) 
+      outcomesPrices: market.outcome_prices
+        ? market.outcome_prices.map((p: string) => parseFloat(p))
         : market.tokens?.map((t: any) => parseFloat(t.price || '0.5')) || [0.5, 0.5],
       volume: parseFloat(market.volume || market.volume_24hr || '0'),
       liquidity: parseFloat(market.liquidity || '0'),

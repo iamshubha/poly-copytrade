@@ -218,7 +218,7 @@ describe('TradeMonitorService', () => {
     });
 
     test('should reconnect WebSocket on disconnect', () => {
-      let isConnected = false;
+      const isConnected = false;
       let reconnectAttempts = 0;
       const maxReconnectAttempts = 5;
 

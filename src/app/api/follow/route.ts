@@ -3,7 +3,7 @@ import { withAuth, successResponse, errorResponse } from "@/lib/api";
 import prisma from "@/lib/prisma";
 import { withRateLimit } from "@/lib/rateLimit";
 import { logger } from "@/lib/logger";
-import { sanitizeInput, validateAddress } from "@/lib/security";
+import { sanitizeInput } from "@/lib/security";
 
 const postHandler = withAuth(async (req: NextRequest, userId: string) => {
   const log = logger.child({ userId, endpoint: '/api/follow', method: 'POST' });

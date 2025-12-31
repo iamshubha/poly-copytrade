@@ -178,7 +178,7 @@ export default function MarketDetailPage() {
                                                 {outcome}
                                             </span>
                                             <Badge
-                                                variant={idx === 0 ? "success" : "error"}
+                                                variant={idx === 0 ? "success" : "danger"}
                                                 size="sm"
                                             >
                                                 {(market.outcomesPrices[idx] * 100).toFixed(1)}¢

@@ -56,7 +56,7 @@ export function CardHeader({ title, subtitle, children, className = '', ...props
   );
 }
 
-export interface CardBodyProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type CardBodyProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function CardBody({ children, className = '', ...props }: CardBodyProps) {
   return (
@@ -66,7 +66,7 @@ export function CardBody({ children, className = '', ...props }: CardBodyProps) 
   );
 }
 
-export interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type CardFooterProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function CardFooter({ children, className = '', ...props }: CardFooterProps) {
   return (

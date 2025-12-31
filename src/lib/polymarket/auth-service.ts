@@ -12,7 +12,7 @@
 
 import { ClobClient, type Chain, type ApiKeyCreds } from '@polymarket/clob-client';
 import { Wallet } from 'ethers';
-import { prisma } from '../prisma';
+import prisma from '../prisma';
 import { encrypt, decrypt } from '../crypto';
 
 // ============================================================================
@@ -98,7 +98,7 @@ export class PolymarketAuthService {
     try {
       const wallet = new Wallet(privateKey);
       const client = new ClobClient(this.host, this.chainId, wallet);
-      
+
       const creds = await client.createApiKey(nonce);
       console.log('✅ New API key created');
       return creds;
@@ -118,7 +118,7 @@ export class PolymarketAuthService {
     try {
       const wallet = new Wallet(privateKey);
       const client = new ClobClient(this.host, this.chainId, wallet);
-      
+
       const creds = await client.deriveApiKey(nonce);
       console.log('✅ API key derived');
       return creds;
@@ -236,7 +236,7 @@ export class PolymarketAuthService {
     try {
       const wallet = new Wallet(privateKey);
       const client = new ClobClient(this.host, this.chainId, wallet, creds);
-      
+
       await client.deleteApiKey();
       console.log('✅ API key revoked on Polymarket');
     } catch (error) {
@@ -268,7 +268,7 @@ export class PolymarketAuthService {
 
       // Create or derive new key
       const newKey = await this.createOrDeriveApiKey(privateKey);
-      
+
       // Store in database
       const wallet = new Wallet(privateKey);
       const walletAddress = await wallet.getAddress();
@@ -291,7 +291,7 @@ export class PolymarketAuthService {
     try {
       // Get existing key to revoke
       const existingKey = await this.getApiKey(userId);
-      
+
       // Revoke on Polymarket if exists
       if (existingKey) {
         try {
@@ -330,7 +330,7 @@ export class PolymarketAuthService {
     try {
       const wallet = new Wallet(privateKey);
       const client = new ClobClient(this.host, this.chainId, wallet, creds);
-      
+
       // Try to fetch API keys as validation
       await client.getApiKeys();
       return true;

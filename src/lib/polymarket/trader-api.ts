@@ -150,9 +150,14 @@ export class PolymarketTraderAPI {
       };
 
       const result = await this.client.getTradesPaginated(params, nextCursor);
-      
+
       console.log(`✅ Fetched page with ${result.trades.length} trades`);
-      return result;
+      return {
+        trades: result.trades,
+        nextCursor: result.next_cursor,
+        limit: result.limit,
+        count: result.count
+      };
     } catch (error) {
       console.error('[TraderAPI] Error fetching paginated trades:', error);
       return { trades: [], nextCursor: 'LTE=', limit: 0, count: 0 };
@@ -237,7 +242,7 @@ export class PolymarketTraderAPI {
 
       for (const trade of trades) {
         const key = trade.asset_id;
-        
+
         if (!positionMap.has(key)) {
           positionMap.set(key, {
             tokenId: trade.asset_id,
@@ -309,12 +314,12 @@ export class PolymarketTraderAPI {
       }
 
       stats.avgTradeSize = totalSize / trades.length;
-      
+
       // Find last trade time
       const timestamps = trades
         .map(t => new Date(t.match_time))
         .filter(d => !isNaN(d.getTime()));
-      
+
       if (timestamps.length > 0) {
         stats.lastTradeTime = new Date(Math.max(...timestamps.map(d => d.getTime())));
       }
@@ -355,11 +360,11 @@ export class PolymarketTraderAPI {
 
       try {
         const newTrades = await this.getRecentTrades(lastTradeTime, 100);
-        
+
         if (newTrades.length > 0) {
           console.log(`✅ Detected ${newTrades.length} new trades`);
           callback(newTrades);
-          
+
           // Update last trade time
           const timestamps = newTrades.map(t => new Date(t.match_time).getTime());
           lastTradeTime = new Date(Math.max(...timestamps)).toISOString();
