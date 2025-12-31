@@ -1,256 +1,329 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Search, TrendingUp, Clock, DollarSign, ArrowUpDown } from 'lucide-react';
-import { useState } from 'react';
-import Link from 'next/link';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MarketCard } from '@/components/features/MarketCard';
+import { MarketFilters } from '@/components/features/MarketFilters';
+import { Search } from 'lucide-react';
 
 export default function MarketsPage() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState<string>('all');
-    const [sortBy, setSortBy] = useState<string>('volume');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [displaySearchQuery, setDisplaySearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedTopic, setSelectedTopic] = useState('all');
+    const [sortBy, setSortBy] = useState('volume'); // volume = Trending
 
-    const { data: markets, isLoading } = useQuery({
-        queryKey: ['markets', searchQuery, categoryFilter, sortBy, sortOrder],
-        queryFn: async () => {
+    // Track previous prices for change detection
+    const previousPricesRef = useRef<Map<string, number[]>>(new Map());
+    const [priceChanges, setPriceChanges] = useState<Map<string, 'up' | 'down' | null>>(new Map());
+
+    // Refs for infinite scroll
+    const observerTarget = useRef(null);
+    const autoLoadCount = useRef(0);
+    const MAX_AUTO_LOADS = 2;
+
+    // Debounced search handler
+    const debouncedSetSearch = useMemo(
+        () => {
+            let timeoutId: NodeJS.Timeout;
+            return (value: string) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    setSearchQuery(value);
+                }, 300);
+            };
+        },
+        []
+    );
+
+    // Infinite query for markets
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        error
+    } = useInfiniteQuery({
+        queryKey: ['dashboard-markets', searchQuery, selectedCategory, selectedTopic, sortBy],
+        queryFn: async ({ pageParam = 0 }) => {
             const params = new URLSearchParams({
-                active: 'true',
-                limit: '50',
+                limit: '20',
+                offset: pageParam.toString(),
                 sortBy,
-                sortOrder,
+                sortOrder: 'desc',
             });
 
+            // Category filter (hide other categories if not "all")
+            if (selectedCategory !== 'all') {
+                const hideCategories: string[] = [];
+                const allCategories = ['politics', 'sports', 'crypto', 'finance', 'geopolitics', 'earnings', 'tech', 'culture', 'world', 'economy', 'elections'];
+                allCategories.forEach(cat => {
+                    if (cat !== selectedCategory) {
+                        hideCategories.push(cat);
+                    }
+                });
+                if (hideCategories.length > 0) {
+                    params.append('hideCategories', hideCategories.join(','));
+                }
+            }
+
+            // Topic filter
+            if (selectedTopic !== 'all') {
+                params.append('tag', selectedTopic);
+            }
+
+            // Search filter
             if (searchQuery) {
                 params.append('search', searchQuery);
             }
 
-            if (categoryFilter !== 'all') {
-                params.append('category', categoryFilter);
+            console.log('[Dashboard Markets] Fetching with params:', params.toString());
+            const res = await fetch(`/api/markets?${params}`);
+
+            if (!res.ok) {
+                throw new Error(`Failed to fetch markets: ${res.status}`);
             }
 
-            const res = await fetch(`/api/markets?${params}`);
-            return res.json();
+            const json = await res.json();
+
+            return {
+                data: json.data?.data || [],
+                total: json.data?.total || 0,
+                availableTags: json.data?.availableTags || [],
+                nextOffset: pageParam + 20
+            };
         },
-        refetchInterval: 30000, // Refetch every 30 seconds for real-time data
+        getNextPageParam: (lastPage, allPages) => {
+            const loadedCount = allPages.reduce((sum, page) => sum + page.data.length, 0);
+            return loadedCount < lastPage.total ? lastPage.nextOffset : undefined;
+        },
+        initialPageParam: 0,
+        refetchInterval: 5000, // Refetch every 5 seconds for real-time data
+        refetchIntervalInBackground: false,
     });
 
-    const categories = [
-        'all',
-        'politics',
-        'sports',
-        'crypto',
-        'entertainment',
-        'business',
-        'science',
-        'other',
-    ];
+    const markets = data?.pages.flatMap(page => page.data) || [];
+    const totalMarkets = data?.pages[0]?.total || 0;
+    const availableTopics = data?.pages[0]?.availableTags || [];
 
-    const sortOptions = [
-        { value: 'volume', label: 'Volume' },
-        { value: 'liquidity', label: 'Liquidity' },
-        { value: 'end_date', label: 'End Date' },
-        { value: 'created_at', label: 'Recently Created' },
-    ];
+    // Detect price changes
+    useEffect(() => {
+        const newChanges = new Map<string, 'up' | 'down' | null>();
 
-    const toggleSortOrder = () => {
-        setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    };
+        markets.forEach((market: any) => {
+            if (!market.outcomesPrices || market.outcomesPrices.length === 0) return;
+
+            const currentPrice = market.outcomesPrices[0];
+            const previousPrices = previousPricesRef.current.get(market.id);
+
+            if (previousPrices && previousPrices.length > 0) {
+                const previousPrice = previousPrices[0];
+                if (currentPrice > previousPrice) {
+                    newChanges.set(market.id, 'up');
+                } else if (currentPrice < previousPrice) {
+                    newChanges.set(market.id, 'down');
+                }
+            }
+
+            previousPricesRef.current.set(market.id, market.outcomesPrices);
+        });
+
+        if (newChanges.size > 0) {
+            setPriceChanges(newChanges);
+            const timer = setTimeout(() => {
+                setPriceChanges(new Map());
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [markets]);
+
+    // Intersection Observer for infinite scroll
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    if (autoLoadCount.current < MAX_AUTO_LOADS) {
+                        console.log('[Dashboard Markets] Auto-loading next page', autoLoadCount.current + 1);
+                        autoLoadCount.current += 1;
+                        fetchNextPage();
+                    }
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => observer.disconnect();
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    // Reset auto-load count when filters change
+    useEffect(() => {
+        autoLoadCount.current = 0;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [searchQuery, selectedCategory, selectedTopic, sortBy]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-0">
             {/* Header */}
-            <div>
+            <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900">Markets</h1>
                 <p className="text-gray-600 mt-1">
                     Browse and trade on active prediction markets
                 </p>
             </div>
 
-            {/* Filters */}
-            <div className="card space-y-4">
-                {/* Search */}
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search markets..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    />
-                </div>
-
-                {/* Categories */}
-                <div className="flex flex-wrap gap-2">
-                    {categories.map((category) => (
-                        <button
-                            key={category}
-                            onClick={() => setCategoryFilter(category)}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${categoryFilter === category
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            {category.charAt(0).toUpperCase() + category.slice(1)}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Sorting Controls */}
-                <div className="flex items-center gap-4 pt-2 border-t">
-                    <span className="text-sm font-medium text-gray-700">Sort by:</span>
-                    <div className="flex items-center gap-2 flex-1">
-                        {sortOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                onClick={() => setSortBy(option.value)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${sortBy === option.value
-                                        ? 'bg-primary-600 text-white'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                        <button
-                            onClick={toggleSortOrder}
-                            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors flex items-center gap-1"
-                            title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
-                        >
-                            <ArrowUpDown className="h-4 w-4" />
-                            {sortOrder === 'asc' ? '↑' : '↓'}
-                        </button>
-                    </div>
-                </div>
+            {/* Polymarket-Style Filters */}
+            <div className="bg-white rounded-lg shadow-sm mb-6 -mx-6">
+                <MarketFilters
+                    searchQuery={displaySearchQuery}
+                    onSearchChange={(value) => {
+                        setDisplaySearchQuery(value);
+                        debouncedSetSearch(value);
+                    }}
+                    selectedCategory={selectedCategory}
+                    onCategorySelect={(category) => {
+                        setSelectedCategory(category);
+                        autoLoadCount.current = 0;
+                    }}
+                    selectedTopic={selectedTopic}
+                    availableTopics={availableTopics}
+                    onTopicSelect={(topic) => {
+                        setSelectedTopic(topic);
+                        autoLoadCount.current = 0;
+                    }}
+                    sortBy={sortBy}
+                    onSortChange={(sort) => {
+                        setSortBy(sort);
+                        autoLoadCount.current = 0;
+                    }}
+                />
             </div>
 
             {/* Markets Grid */}
             {isLoading ? (
-                <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                <div className="text-center py-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="text-gray-600 mt-4">Loading markets...</p>
                 </div>
-            ) : markets?.data?.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {markets.data.map((market: any) => {
-                        const hasId = !!market.id;
-                        const CardWrapper: any = hasId ? Link : 'div';
-                        const cardProps = hasId
-                            ? { href: `/dashboard/markets/${market.id}` }
-                            : {};
-                        return (
-                            <CardWrapper
-                                key={market.id || market.title}
-                                {...cardProps}
-                                className={`card hover:shadow-lg transition-shadow ${!hasId ? 'opacity-95 cursor-default' : ''}`}
+            ) : markets.length > 0 ? (
+                <>
+                    {/* Results Info with Connection Status */}
+                    <div className="mb-4 flex items-center justify-between text-sm">
+                        <span className="text-gray-600">
+                            Showing {markets.length} of {totalMarkets} markets
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${isFetchingNextPage ? 'bg-blue-500 animate-pulse' : 'bg-green-500'}`} />
+                            <span className="text-gray-600">
+                                {isFetchingNextPage ? 'Updating...' : 'Live'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Markets Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {markets.map((market: any) => (
+                            <div
+                                key={market.id}
+                                className={`transition-all duration-300 ${priceChanges.get(market.id) === 'up'
+                                        ? 'animate-price-up'
+                                        : priceChanges.get(market.id) === 'down'
+                                            ? 'animate-price-down'
+                                            : ''
+                                    }`}
                             >
-                                {/* Market Image */}
-                                {market.imageUrl && (
-                                    <img
-                                        src={market.imageUrl}
-                                        alt={market.title}
-                                        className="w-full h-48 object-cover rounded-lg mb-4"
-                                    />
+                                <MarketCard
+                                    market={market}
+                                    showImage={true}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Auto-load trigger */}
+                    {autoLoadCount.current < MAX_AUTO_LOADS && hasNextPage && (
+                        <div ref={observerTarget} className="h-4 w-full" />
+                    )}
+
+                    {/* Loading indicator during auto-load */}
+                    {isFetchingNextPage && autoLoadCount.current < MAX_AUTO_LOADS && (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                            <p className="text-gray-600 mt-2 text-sm">Loading more markets...</p>
+                        </div>
+                    )}
+
+                    {/* Load More Button */}
+                    {autoLoadCount.current >= MAX_AUTO_LOADS && hasNextPage && (
+                        <div className="flex justify-center py-8">
+                            <button
+                                onClick={() => fetchNextPage()}
+                                disabled={isFetchingNextPage}
+                                className="px-6 py-2.5 bg-white border-2 border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {isFetchingNextPage ? (
+                                    <span className="flex items-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent" />
+                                        Loading...
+                                    </span>
+                                ) : (
+                                    'Load More'
                                 )}
+                            </button>
+                        </div>
+                    )}
 
-                                {/* Market Title */}
-                                <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
-                                    {market.title}
-                                </h3>
-
-                                {!hasId && (
-                                    <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 rounded px-2 py-1 inline-block mb-2">
-                                        Detail view unavailable for this market
-                                    </p>
-                                )}
-
-                                {/* Market Description */}
-                                {market.description && (
-                                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                                        {market.description}
-                                    </p>
-                                )}
-
-                                {/* Market Stats */}
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="flex items-center text-sm">
-                                        <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                                        <span className="text-gray-600">
-                                            Vol: ${(market.volume / 1000).toFixed(1)}k
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center text-sm">
-                                        <TrendingUp className="h-4 w-4 text-gray-400 mr-1" />
-                                        <span className="text-gray-600">
-                                            Liq: ${(market.liquidity / 1000).toFixed(1)}k
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Market Prices */}
-                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <div className="flex-1">
-                                        <p className="text-xs text-gray-600 mb-1">Yes</p>
-                                        <p className="text-lg font-bold text-green-600">
-                                            {(market.outcomesPrices[0] * 100).toFixed(1)}¢
-                                        </p>
-                                    </div>
-                                    <div className="flex-1 text-right">
-                                        <p className="text-xs text-gray-600 mb-1">No</p>
-                                        <p className="text-lg font-bold text-red-600">
-                                            {(market.outcomesPrices[1] * 100).toFixed(1)}¢
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* End Date */}
-                                {market.endDate && (
-                                    <div className="flex items-center text-sm text-gray-500 mt-3">
-                                        <Clock className="h-4 w-4 mr-1" />
-                                        <span>
-                                            Ends {new Date(market.endDate).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Category Tags */}
-                                {market.category && (
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded bg-primary-100 text-primary-800">
-                                            {market.category}
-                                        </span>
-                                        {market.tags?.slice(0, 2).map((tag: string) => (
-                                            <span
-                                                key={tag}
-                                                className="inline-flex px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700"
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardWrapper>
-                        );
-                    })}
-                </div>
+                    {/* End of list */}
+                    {!hasNextPage && markets.length > 0 && (
+                        <div className="text-center py-8 text-sm text-gray-500">
+                            End of results
+                        </div>
+                    )}
+                </>
             ) : (
-                <div className="card text-center py-12">
-                    <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
+                    <Search className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">
                         No markets found
                     </h3>
-                    <p className="text-gray-600">
-                        Try adjusting your search or filter criteria
+                    <p className="text-gray-600 mb-6">
+                        Try adjusting your filters or search query
                     </p>
-                    <div className="mt-4">
-                        <button
-                            onClick={() => { setSearchQuery(''); setCategoryFilter('all'); }}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                        >
-                            Reset filters
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => {
+                            setSearchQuery('');
+                            setDisplaySearchQuery('');
+                            setSelectedCategory('all');
+                            setSelectedTopic('all');
+                            autoLoadCount.current = 0;
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        Reset Filters
+                    </button>
+                </div>
+            )}
+
+            {/* Error State */}
+            {error && (
+                <div className="text-center py-12 bg-red-50 rounded-lg border border-red-200">
+                    <div className="text-red-500 mb-4 text-4xl">⚠️</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Failed to load markets
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                        {error instanceof Error ? error.message : 'An error occurred'}
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        Retry
+                    </button>
                 </div>
             )}
         </div>

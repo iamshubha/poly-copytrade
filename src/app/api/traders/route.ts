@@ -1,44 +1,52 @@
 import { NextRequest } from "next/server";
 import { withAuth, successResponse, errorResponse } from "@/lib/api";
 import prisma from "@/lib/prisma";
+import { withRateLimit } from "@/lib/rateLimit";
+import { logger } from "@/lib/logger";
 
-export const GET = withAuth(async (req: NextRequest, userId: string) => {
+const getHandler = withAuth(async (req: NextRequest, userId: string) => {
+  const log = logger.child({ userId, endpoint: '/api/traders', method: 'GET' });
+  
   try {
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100); // Cap at 100
     const offset = parseInt(searchParams.get("offset") || "0");
     const sortBy = searchParams.get("sortBy") || "followers"; // followers, trades, volume
 
+    log.info('Fetching traders', { limit, offset, sortBy });
+
     // Get all users who have made trades (potential traders to follow)
-    const traders = await prisma.user.findMany({
-      where: {
-        // Exclude current user
-        id: { not: userId },
-      },
-      select: {
-        id: true,
-        address: true,
-        createdAt: true,
-        _count: {
-          select: {
-            followers: true,
-            trades: true,
+    const traders = await log.measure('fetch-traders', async () => {
+      return await prisma.user.findMany({
+        where: {
+          // Exclude current user
+          id: { not: userId },
+        },
+        select: {
+          id: true,
+          address: true,
+          createdAt: true,
+          _count: {
+            select: {
+              followers: true,
+              trades: true,
+            },
+          },
+          trades: {
+            select: {
+              amount: true,
+              profit: true,
+              status: true,
+            },
+            take: 100, // Last 100 trades for stats
+            orderBy: {
+              createdAt: "desc",
+            },
           },
         },
-        trades: {
-          select: {
-            amount: true,
-            profit: true,
-            status: true,
-          },
-          take: 100, // Last 100 trades for stats
-          orderBy: {
-            createdAt: "desc",
-          },
-        },
-      },
-      take: limit,
-      skip: offset,
+        take: limit,
+        skip: offset,
+      });
     });
 
     // Calculate stats for each trader
@@ -120,6 +128,11 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
       isFollowing: followingIds.has(trader.id),
     }));
 
+    log.info('Traders fetched successfully', { 
+      count: tradersWithFollowStatus.length,
+      sortBy 
+    });
+
     return successResponse({
       traders: tradersWithFollowStatus,
       total: tradersWithStats.length,
@@ -127,7 +140,9 @@ export const GET = withAuth(async (req: NextRequest, userId: string) => {
       offset,
     });
   } catch (error) {
-    console.error("Error fetching traders:", error);
+    log.error('Failed to fetch traders', { error });
     return errorResponse(error);
   }
 });
+
+export const GET = withRateLimit(getHandler, 'read');

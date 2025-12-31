@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 import { PolymarketMarket, PolymarketOrder } from "@/types";
+import { tradeExecutor, TradeExecutionParams } from "./tradeExecutor";
 
 class PolymarketClient {
   private client: AxiosInstance;
@@ -289,13 +290,32 @@ class PolymarketClient {
     amount: number; // USDC
     price: number; // 0-1
     maker: string; // wallet address
+    privateKey?: string; // Optional: for server-side signing (NOT RECOMMENDED)
   }) {
     try {
-      // In production, this would create an actual order on Polymarket
-      // For now, return a mock response
+      // Use real trade executor for blockchain transactions
+      const result = await tradeExecutor.executeBuyTrade({
+        marketId: params.marketId,
+        outcomeIndex: params.outcomeIndex,
+        side: 'BUY',
+        amount: params.amount,
+        price: params.price,
+        userAddress: params.maker,
+        privateKey: params.privateKey,
+        maxSlippage: 0.5, // 0.5% default slippage
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Trade execution failed');
+      }
+
       return {
-        id: `order-${Date.now()}`,
-        status: "PENDING",
+        id: result.orderId || `order-${Date.now()}`,
+        transactionHash: result.transactionHash,
+        status: "COMPLETED",
+        executedPrice: result.executedPrice,
+        executedAmount: result.executedAmount,
+        gasUsed: result.gasUsed,
         ...params,
       };
     } catch (error) {
@@ -311,11 +331,32 @@ class PolymarketClient {
     shares: number;
     price: number;
     maker: string;
+    privateKey?: string;
   }) {
     try {
+      // Use real trade executor for blockchain transactions
+      const result = await tradeExecutor.executeSellTrade({
+        marketId: params.marketId,
+        outcomeIndex: params.outcomeIndex,
+        side: 'SELL',
+        amount: params.shares,
+        price: params.price,
+        userAddress: params.maker,
+        privateKey: params.privateKey,
+        maxSlippage: 0.5,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Trade execution failed');
+      }
+
       return {
-        id: `order-${Date.now()}`,
-        status: "PENDING",
+        id: result.orderId || `order-${Date.now()}`,
+        transactionHash: result.transactionHash,
+        status: "COMPLETED",
+        executedPrice: result.executedPrice,
+        executedAmount: result.executedAmount,
+        gasUsed: result.gasUsed,
         ...params,
       };
     } catch (error) {

@@ -3,6 +3,7 @@ import { polymarketClient } from "./polymarket";
 import { Trade, CopiedTrade, TradeRequest, CopyTradeRequest } from "@/types";
 import { Queue, Worker } from "bullmq";
 import Redis from "ioredis";
+import { logger } from "./logger";
 
 // Initialize Redis connection for BullMQ (requires maxRetriesPerRequest: null)
 const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
@@ -18,7 +19,15 @@ export class CopyTradingEngine {
     userId: string,
     tradeRequest: TradeRequest
   ): Promise<Trade> {
+    const log = logger.child({ userId, method: 'processTrade' });
+    
     try {
+      log.info('Processing trade request', { 
+        marketId: tradeRequest.marketId,
+        amount: tradeRequest.amount,
+        side: tradeRequest.side
+      });
+
       // Validate trade
       const validation = polymarketClient.validateTrade({
         amount: tradeRequest.amount,
@@ -26,6 +35,7 @@ export class CopyTradingEngine {
       });
 
       if (!validation.valid) {
+        log.warn('Trade validation failed', { error: validation.error });
         throw new Error(validation.error);
       }
 
@@ -95,6 +105,9 @@ export class CopyTradingEngine {
         error: trade.error ?? undefined,
       });
 
+      log.logTrade(trade);
+      log.info('Trade processed successfully', { tradeId: trade.id });
+
       // Return trade with correct types
       return {
         ...trade,
@@ -105,14 +118,18 @@ export class CopyTradingEngine {
         error: trade.error ?? undefined,
       };
     } catch (error) {
-      console.error("Error processing trade:", error);
+      log.error('Error processing trade', { error });
       throw error;
     }
   }
 
   // Execute trade on Polymarket
   private async executeTrade(trade: Trade): Promise<void> {
+    const log = logger.child({ tradeId: trade.id, method: 'executeTrade' });
+    
     try {
+      log.info('Executing trade', { side: trade.side, amount: trade.amount });
+
       await prisma.trade.update({
         where: { id: trade.id },
         data: { status: "PROCESSING" },
@@ -124,6 +141,7 @@ export class CopyTradingEngine {
       });
 
       if (!user) {
+        log.error('User not found for trade');
         throw new Error("User not found");
       }
 

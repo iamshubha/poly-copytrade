@@ -26,6 +26,7 @@ model User {
     copiedTrades  CopiedTrade[]
     notifications Notification[]
     apiKeys       ApiKey[]
+    polymarketApiKey PolymarketApiKey?
 
     @@index([address])
 }
@@ -251,6 +252,26 @@ model ApiKey {
 
     @@index([userId])
     @@index([key])
+}
+
+model PolymarketApiKey {
+    id     String @id @default(cuid())
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // API Credentials (secret and passphrase are encrypted)
+    key                 String // Public API key
+    encryptedSecret     String // Encrypted secret
+    encryptedPassphrase String // Encrypted passphrase
+
+    // Metadata
+    derivedFrom String   // Wallet address this key was derived from
+    lastUsed    DateTime?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@index([userId])
+    @@index([derivedFrom])
 }
 
 model SystemLog {
